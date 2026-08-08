@@ -1,4 +1,4 @@
-import { createBrowserRouter, Link, Outlet, RouterProvider } from 'react-router';
+import { createBrowserRouter, Outlet, RouterProvider } from 'react-router';
 
 import './App.css'
 import SignUp from './pages/auth/signup';
@@ -12,10 +12,6 @@ import { appRoutes } from './config';
 const RootLayout = () => {
   return (
     <div className='min-h-screen text-white'>
-      {/* Menu bar */}
-      <nav className='flex gap-3'>
-        <Link to="/">Accueil</Link>
-      </nav>
       {/* Page body */}
       <main className='bg-navy-gradien'>
         <Outlet />
