@@ -6,9 +6,9 @@ import SignUp from './pages/signup';
 
 const RootLayout = () => {
   return (
-    <div>
+    <div className='bg-white'>
       {/* Menu bar */}
-      <nav style={{ display: 'flex', gap: '10px', padding: '10px', background: '#eee' }}>
+      <nav className='flex gap-3 p-3 bg-white'>
         <Link to="/">Accueil</Link>
       </nav>
       {/* Page body */}
