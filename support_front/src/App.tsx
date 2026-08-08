@@ -6,13 +6,13 @@ import SignUp from './pages/signup';
 
 const RootLayout = () => {
   return (
-    <div className='bg-white'>
+    <div className='bg-navy-gradient h-full'>
       {/* Menu bar */}
-      <nav className='flex gap-3 p-3 bg-white'>
+      <nav className='flex gap-3 text-white'>
         <Link to="/">Accueil</Link>
       </nav>
       {/* Page body */}
-      <main style={{ padding: '20px' }}>
+      <main className='min-h-screen'>
         <Outlet />
       </main>
     </div>
@@ -26,7 +26,7 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       {
-        path: "/",
+        path: "/signup",
         element:<SignUp/>
       }
     ]

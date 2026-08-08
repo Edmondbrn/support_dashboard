@@ -10,12 +10,44 @@
   height: 100vh;
   margin: 0;
   padding: 0;
-  background-color: white;
+  background: radial-gradient(circle at top, #0f172a 0%, #020617 100%);
 }
 
+/* Deep Slate Navy (Sleek & Technical) */
+.bg-slate-dark {
+  background-color: #030712; /* Tailwind gray-950 / deep navy-black */
+}
+
+/* Midnight Ocean (Subtle Royal Undertone) */
+.bg-midnight-black {
+  background-color: #050b14;
+}
+
+/* Cosmic Black (High Contrast Dark Mode) */
+.bg-cosmic-black {
+  background-color: #02040a;
+}
+
+/* Rich Dark Navy Gradient (Adds Depth) */
+.bg-navy-gradient {
+  background: radial-gradient(circle at top, #0f172a 0%, #020617 100%);
+}
+
+
+/* Custom tailwind class */
+
+@layer components {
+  .bg-glass {
+    @apply bg-white/10 border border-white/10 backdrop-blur-md shadow-2xl
+  }
+}
+
+/* ------------------------------------- */
+/* Shadcn config */
+/* ------------------------------------- */
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Roboto Variable', sans-serif;
+  --font-sans: ' Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
