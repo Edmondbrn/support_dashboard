@@ -2,6 +2,7 @@ import { Btn } from "@/components/shared/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { appRoutes } from "@/config";
 import useSignin from "@/hooks/auth/useSignin";
 
 
@@ -16,7 +17,8 @@ export default function Signin() {
         form,
         setForm,
         isLoading,
-        submitSignin
+        submitSignin,
+        navigate
     } = useSignin();
 
     return (
@@ -65,8 +67,15 @@ export default function Signin() {
                             </Btn>
                         </Field>
                     </FieldGroup>
+
+                    <div className="flex justify-center pt-3 gap-3 ">
+                        <span className="text-gray-400">No account yet ?</span>
+                        <button className="cursor-pointer hover:underline font-semibold text-gray-200" onClick={() => navigate(appRoutes.AUTH_SIGNUP)}>Signup</button>
+                    </div>
+
                 </CardContent>
             </Card>
+            
 
         </div>
     )

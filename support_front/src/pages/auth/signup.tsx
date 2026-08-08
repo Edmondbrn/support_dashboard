@@ -2,6 +2,7 @@ import { Btn } from "@/components/shared/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { appRoutes } from "@/config";
 import useSignup from "@/hooks/auth/useSignup";
 
 
@@ -18,7 +19,8 @@ export default function SignUp() {
         setIsPasswordEqual,
         isFormReady,
         submitSignup,
-        isLoading
+        isLoading,
+        navigate,
     } = useSignup();
 
     return (
@@ -104,6 +106,11 @@ export default function SignUp() {
                             </Btn>
                         </Field>
                     </FieldGroup>
+
+                    <div className="flex justify-center pt-3 gap-3 ">
+                        <span className="text-gray-400">Already have an account ?</span>
+                        <button className="cursor-pointer hover:underline font-semibold text-gray-200" onClick={() => navigate(appRoutes.AUTH_SIGNIN)}>Connect</button>
+                    </div>
                 </CardContent>
             </Card>
 

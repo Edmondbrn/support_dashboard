@@ -11,13 +11,13 @@ import { appRoutes } from './config';
 
 const RootLayout = () => {
   return (
-    <div className='min-h-screen'>
+    <div className='min-h-screen text-white'>
       {/* Menu bar */}
-      <nav className='flex gap-3 text-white'>
+      <nav className='flex gap-3'>
         <Link to="/">Accueil</Link>
       </nav>
       {/* Page body */}
-      <main className='bg-navy-gradient'>
+      <main className='bg-navy-gradien'>
         <Outlet />
       </main>
     </div>

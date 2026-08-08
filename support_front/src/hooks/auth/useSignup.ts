@@ -1,6 +1,7 @@
 import { signUp } from "@/apis/auth";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 interface SignupForm {
     email: string,
@@ -14,6 +15,7 @@ export default function useSignup() {
     const [form, setForm] = useState<SignupForm>({email: "", password: "", username: ""})
     const [isPasswordsEqual, setIsPasswordEqual] = useState<boolean>(true);
     const [isLoading, setLoading] = useState<boolean>(false);
+    const navigate = useNavigate();
 
     /**
      * Check if all the fields are defined
@@ -97,5 +99,6 @@ export default function useSignup() {
         isFormReady,
         isLoading,
         setLoading,
+        navigate,
     };
 }
