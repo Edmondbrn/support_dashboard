@@ -29,3 +29,41 @@ export async function signUp(email: string, password : string, username : string
     await supabase.auth.signOut();
     return {status: "success"};
 }
+
+
+/**
+ * API call to connect a user based on the password
+ * @param email 
+ * @param password 
+ * @returns 
+ */
+export async function signin(email : string, password : string) : Promise<ApiCallResponse> {
+    const {data, error} = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+    })
+
+    if (error) {
+        console.error("[ERROR] Supabase error for signin", error.message);
+        return {status: "fail", errorMsg: error.message};
+    }
+    return {status: 'success', data: data.user}
+}
+
+
+
+/**
+ * APi call to connect a user based on the password
+ * @param email 
+ * @param password 
+ * @returns 
+ */
+export async function signout() : Promise<ApiCallResponse> {
+    const {error} = await supabase.auth.signOut();
+
+    if (error) {
+        console.error("[ERROR] Supabase error whiel singing out", error.message);
+        return {status: "fail", errorMsg: error.message};
+    }
+    return {status: 'success'};
+}

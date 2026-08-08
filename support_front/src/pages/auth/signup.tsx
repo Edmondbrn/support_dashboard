@@ -2,7 +2,7 @@ import { Btn } from "@/components/shared/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import useSignup from "@/hooks/useSignup";
+import useSignup from "@/hooks/auth/useSignup";
 
 
 

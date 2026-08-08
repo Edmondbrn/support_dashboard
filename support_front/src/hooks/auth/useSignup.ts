@@ -3,15 +3,15 @@ import { showErrorToast, showSuccessToast } from "@/utils/showToast";
 import { useState } from "react";
 
 interface SignupForm {
-    email?: string,
-    password?: string,
-    username?: string
+    email: string,
+    password: string,
+    username: string
 }
 
 export default function useSignup() {
 
 
-    const [form, setForm] = useState<SignupForm>({email: undefined, password: undefined, username: undefined})
+    const [form, setForm] = useState<SignupForm>({email: "", password: "", username: ""})
     const [isPasswordsEqual, setIsPasswordEqual] = useState<boolean>(true);
     const [isLoading, setLoading] = useState<boolean>(false);
 
@@ -21,7 +21,7 @@ export default function useSignup() {
      */
     const isFormReady = () => {
         for (const [key, val] of Object.entries(form)) {
-            if (!val || val.trim() === "") {
+            if (val.trim() === "") {
                 return {ready: false, missing: key};
             }
         }
@@ -78,7 +78,7 @@ export default function useSignup() {
 
         // send supabase request
         setLoading(true);
-        const res = await signUp(form.email!, form.password!, form.username!);
+        const res = await signUp(form.email, form.password, form.username);
         if (res.status === "success") {
             showSuccessToast("Account create successfully");
         } else {
