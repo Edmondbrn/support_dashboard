@@ -23,7 +23,7 @@ export async function signUp(email: string, password : string, username : string
 
     if (error) {
         console.error("[ERROR] Supabase error for signup", error.message);
-        return {status: "fail", errorMsg: error.message};
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
     }
     // disconnect the user, // TODO remove it when email confirm is set to tru
     await supabase.auth.signOut();
@@ -45,7 +45,7 @@ export async function signin(email : string, password : string) : Promise<ApiCal
 
     if (error) {
         console.error("[ERROR] Supabase error for signin", error.message);
-        return {status: "fail", errorMsg: error.message};
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
     }
     return {status: 'success', data: data.user}
 }
@@ -63,7 +63,7 @@ export async function signout() : Promise<ApiCallResponse> {
 
     if (error) {
         console.error("[ERROR] Supabase error whiel singing out", error.message);
-        return {status: "fail", errorMsg: error.message};
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
     }
     return {status: 'success'};
 }
