@@ -7,6 +7,10 @@ class AppRoutes {
     AUTH_SIGNIN = "/auth/signin";
 
     HOME = "/home";
+
+    TICKETS = "/tickets";
+    TICKET_CREATE = "/tickets/new";
+    MESSAGES = "/messages";
 }
 
 
