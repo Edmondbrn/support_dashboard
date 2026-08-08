@@ -4,6 +4,8 @@ import './App.css'
 import SignUp from './pages/auth/signup';
 import Signin from './pages/auth/signin';
 import Home from './pages/home/home';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import { AuthProvider } from './contexts/AuthContext';
 import { appRoutes } from './config';
 
 
@@ -38,14 +40,22 @@ const router = createBrowserRouter([
       },
       {
         path: appRoutes.HOME,
-        element:<Home/>
+        element: (
+          <ProtectedRoute>
+            <Home/>
+          </ProtectedRoute>
+        )
       }
     ]
   }
 ])
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
 
 export default App
