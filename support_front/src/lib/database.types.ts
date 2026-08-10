@@ -122,6 +122,7 @@ export type Database = {
           client_id: string
           closed_by: string | null
           created_at: string
+          description: string
           id: string
           priority: Database["public"]["Enums"]["ticket_priority"]
           status: Database["public"]["Enums"]["ticket_status"]
@@ -132,9 +133,10 @@ export type Database = {
           client_id: string
           closed_by?: string | null
           created_at?: string
+          description: string
           id?: string
           priority: Database["public"]["Enums"]["ticket_priority"]
-          status: Database["public"]["Enums"]["ticket_status"]
+          status?: Database["public"]["Enums"]["ticket_status"]
         }
         Update: {
           agent_id?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           client_id?: string
           closed_by?: string | null
           created_at?: string
+          description?: string
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
           status?: Database["public"]["Enums"]["ticket_status"]

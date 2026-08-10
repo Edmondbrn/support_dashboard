@@ -11,9 +11,17 @@ export interface ApiCallResponse {
 }
 
 export type UserRole = Database["public"]["Enums"]["roles"];
+export type TicketPriority = Database["public"]["Enums"]["ticket_priority"];
+export type TicketStatus = Database["public"]["Enums"]["ticket_status"];
 
 export interface Profile {
     id: string;
     username: string;
     role: UserRole;
 }
+
+export interface Category {
+    id: string;
+    label: string;
+}
+

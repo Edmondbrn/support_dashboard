@@ -2,7 +2,7 @@ import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
 
 
-type BtnVersion = "primary";
+type BtnVersion = "primary" | "secondary";
 
 interface BtnProps {
     children: React.ReactNode,
@@ -25,6 +25,8 @@ export function Btn(props : BtnProps) {
         switch (props.version) {
             case "primary":
                 return "bg-white/20 hover:bg-white/30 cursor-pointer";
+            case "secondary":
+                return "bg-orange-400 hover:bg-orange-500 cursor-pointer";
         }
     } 
 

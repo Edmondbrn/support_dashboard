@@ -165,12 +165,14 @@ grant all on public.categories to service_role;
 CREATE TABLE public.tickets (
   id          uuid                     DEFAULT gen_random_uuid() NOT NULL,
   client_id   uuid                     NOT NULL,
-  agent_id    uuid,
+  agent_id    uuid                     DEFAULT NULL,
   category_id uuid                     NOT NULL,
-  status      public.ticket_status     NOT NULL,
+  status      public.ticket_status     NOT NULL DEFAULT 'open'::ticket_status,
+  description text                     NOT NULL,
   priority    public.ticket_priority   NOT NULL,
-  created_at  timestamp with time zone DEFAULT now() NOT NULL,
-  closed_by   uuid
+  created_at  timestamp with time zone DEFAULT NOW() NOT NULL,
+  closed_by   uuid                     DEFAULT NULL,
+  CHECK (length(description) <= 255)
 );
 COMMENT ON TABLE public.tickets IS 'Ticket created by client';
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
@@ -477,6 +479,27 @@ $function$;
 
 CREATE TRIGGER create_profile_trigger AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.create_profile();
 
+
+CREATE FUNCTION public.set_ticket_default_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+BEGIN
+
+  -- force default fields values
+  UPDATE public.tickets AS t
+  SET created_at = NOW(), status = 'open'::ticket_status, agent_id = NULL, closed_by = NULL
+  WHERE t.id = NEW.id;
+
+  RETURN NEW;
+  
+END;
+$function$;
+
+
+CREATE TRIGGER set_ticket_default_fields_trigger AFTER INSERT ON public.tickets FOR EACH ROW EXECUTE FUNCTION public.set_ticket_default_fields();
 ----------- RLS policies --------------
 
 -- No UPDATE RLS policies because they are too complex to handle cleanly (trigger function to avoid the update of fixed values), 

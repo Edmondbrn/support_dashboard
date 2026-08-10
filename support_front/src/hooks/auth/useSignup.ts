@@ -1,4 +1,5 @@
 import { signUp } from "@/apis/auth";
+import { appRoutes } from "@/config";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
 import { useState } from "react";
 import { useNavigate } from "react-router";
@@ -82,7 +83,8 @@ export default function useSignup() {
         setLoading(true);
         const res = await signUp(form.email, form.password, form.username);
         if (res.status === "success") {
-            showSuccessToast("Account create successfully");
+            showSuccessToast("Account created successfully");
+            setTimeout(() => navigate(appRoutes.AUTH_SIGNIN), 2000); // redirect to signin page in case of success
         } else {
             showErrorToast(`Error, cannot create the account because: ${res.errorMsg}`);
         }
