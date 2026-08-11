@@ -1,7 +1,6 @@
 import { createTicket } from "@/apis/public";
-import type { TicketPriority } from "@/apis/types";
+import type { TicketCategory, TicketPriority } from "@/apis/types";
 import { useAuth } from "@/contexts/AuthContext";
-import useCategories from "@/hooks/tickets/useCategories";
 import { useMutation } from "@tanstack/react-query";
 import { appRoutes } from "@/config";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
@@ -11,21 +10,20 @@ import { useNavigate } from "react-router";
 export interface CreateTicketForm {
     description: string,
     priority: TicketPriority,
-    categoryId: string,
+    category: TicketCategory,
     categoryLabel: string,
 }
 
 const DEFAULT_FORM: CreateTicketForm = {
     description: "",
     priority: "low",
-    categoryId: "",
+    category: "software",
     categoryLabel: ""
 };
 
 export default function useCreateTicket() {
 
     const { user } = useAuth();
-    const { categories, isLoadingCategories, isErrorCategories } = useCategories();
     const [form, setForm] = useState<CreateTicketForm>(DEFAULT_FORM);
     const navigate = useNavigate();
 
@@ -34,13 +32,13 @@ export default function useCreateTicket() {
      * @returns 
      */
     const isFormReady = () => {
-        return form.description.trim() !== "" && form.categoryId.trim() !== "";
+        return form.description.trim() !== "";
     }
 
     const mutation = useMutation({
         mutationFn: () => createTicket(
             user!.id,
-            form.categoryId,
+            form.category,
             form.priority,
             form.description,
         ),
@@ -82,9 +80,6 @@ export default function useCreateTicket() {
         isFormReady,
         submitCreateTicket,
         isLoading: mutation.isPending,
-        categories,
-        isLoadingCategories,
-        isErrorCategories,
         navigate,
     };
 }

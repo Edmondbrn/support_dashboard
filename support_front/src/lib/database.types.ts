@@ -34,24 +34,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      categories: {
-        Row: {
-          created_by: Database["public"]["Enums"]["roles"]
-          id: string
-          label: string
-        }
-        Insert: {
-          created_by: Database["public"]["Enums"]["roles"]
-          id?: string
-          label?: string
-        }
-        Update: {
-          created_by?: Database["public"]["Enums"]["roles"]
-          id?: string
-          label?: string
-        }
-        Relationships: []
-      }
       messages: {
         Row: {
           attachment_url: string | null
@@ -118,7 +100,7 @@ export type Database = {
       tickets: {
         Row: {
           agent_id: string | null
-          category_id: string
+          category: Database["public"]["Enums"]["ticket_category"]
           client_id: string
           closed_by: string | null
           created_at: string
@@ -129,7 +111,7 @@ export type Database = {
         }
         Insert: {
           agent_id?: string | null
-          category_id: string
+          category: Database["public"]["Enums"]["ticket_category"]
           client_id: string
           closed_by?: string | null
           created_at?: string
@@ -140,7 +122,7 @@ export type Database = {
         }
         Update: {
           agent_id?: string | null
-          category_id?: string
+          category?: Database["public"]["Enums"]["ticket_category"]
           client_id?: string
           closed_by?: string | null
           created_at?: string
@@ -155,13 +137,6 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
           {
@@ -208,6 +183,7 @@ export type Database = {
     }
     Enums: {
       roles: "admin" | "client" | "agent"
+      ticket_category: "software" | "hardware" | "delivery" | "payment"
       ticket_priority: "low" | "medium" | "high"
       ticket_status: "open" | "in_progress" | "resolved" | "closed"
     }
@@ -341,6 +317,7 @@ export const Constants = {
   public: {
     Enums: {
       roles: ["admin", "client", "agent"],
+      ticket_category: ["software", "hardware", "delivery", "payment"],
       ticket_priority: ["low", "medium", "high"],
       ticket_status: ["open", "in_progress", "resolved", "closed"],
     },

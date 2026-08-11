@@ -26,7 +26,7 @@ export function Btn(props : BtnProps) {
             case "primary":
                 return "bg-white/20 hover:bg-white/30 cursor-pointer";
             case "secondary":
-                return "bg-orange-400 hover:bg-orange-500 cursor-pointer";
+                return "bg-orange hover:bg-orange-500 cursor-pointer";
         }
     } 
 

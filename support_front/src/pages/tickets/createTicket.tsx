@@ -12,6 +12,12 @@ const PRIORITIES = [
     { value: "high", label: "High", icon: ShieldXIcon },
 ] as const;
 
+const CATEGORIES = [
+    { value: "software", label: "Software" },
+    { value: "hardware", label: "Hardware" },
+    { value: "delivery", label: "Delivery" },
+    { value: "payment", label: "Payment" },
+]
 /**
  * Form to create a new ticket.
  */
@@ -23,12 +29,7 @@ export default function CreateTicket() {
         isFormReady,
         submitCreateTicket,
         isLoading,
-        categories,
-        isLoadingCategories,
-        isErrorCategories,
     } = useCreateTicket();
-
-    console.log(categories);
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center py-10">
@@ -78,24 +79,14 @@ export default function CreateTicket() {
 
                         <Field>
                             <FieldLabel htmlFor="ticket-category">Category</FieldLabel>
-                            <Select value={form.categoryLabel} onValueChange={(value) => { if (value) { setForm({ ...form, categoryId: value, categoryLabel: categories.find((cat) => cat.id === value)?.label ?? categories[0]?.label }); } }}>
+                            <Select value={form.category} onValueChange={(value) => { if (value) { setForm({ ...form, category: value })} }}>
                                 <SelectTrigger id="ticket-category" className="w-full border-white/30 cursor-pointer">
                                     <SelectValue placeholder="Select a category" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {isLoadingCategories && (
-                                        <SelectItem value="__loading__" disabled>
-                                            Loading categories...
-                                        </SelectItem>
-                                    )}
-                                    {isErrorCategories && (
-                                        <SelectItem value="__error__" disabled>
-                                            Categories unavailable
-                                        </SelectItem>
-                                    )}
-                                    {categories.map((category) => (
-                                        <SelectItem key={category.id} value={category.id}>
-                                            {category.label}
+                                    {CATEGORIES.map((cat) => (
+                                        <SelectItem key={cat.value} value={cat.value}>
+                                            {cat.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

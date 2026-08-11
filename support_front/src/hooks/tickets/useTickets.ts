@@ -1,0 +1,75 @@
+import { findTicketsByClient } from "@/apis/public";
+import type { Ticket, TicketCategory, TicketPriority } from "@/apis/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+
+
+
+export default function useTickets() {
+
+    const { user } = useAuth();
+
+    // query to find all the tickets of the current client
+    const query = useQuery({
+        queryKey: [{"client": user?.id}],
+        staleTime: 60 * 5 * 1000, // 5 minutes
+        queryFn: async (): Promise<Ticket[]> => {
+            if (!user) {
+                return []
+            }
+
+            const res = await findTicketsByClient(user.id);
+            if (res.status === "fail") {
+                console.error("[ERROR] Cannot find client's tickets", res.errorMsg);
+                return [];
+            }
+
+            return res.data as Ticket[];
+        },
+    });
+
+
+    /**
+     * Helper function to get priority badge color
+     * @param priority 
+     * @returns 
+     */
+    const getPriorityBadgeVariant = (priority : TicketPriority) => {
+
+        switch (priority) {
+            case "medium":
+                return "bg-blue-600 text-white"
+            case "high":
+                return "bg-orange text-white"
+            case "low":
+            default:
+                return "bg-white text-gray-800"
+        }
+    }
+
+
+    /**
+     * Helper function to get category badge color
+     * @param priority 
+     * @returns 
+     */
+    const getCategoryBadgeVariant = (category : TicketCategory) => {
+
+        switch (category) {
+            case "software":
+                return "bg-gray-300 text-gray-800"
+            case "hardware":
+            case "delivery":
+            case "payment":
+        }
+    }
+
+    return {
+        tickets: query.data ?? [],
+        isLoadingTickets: query.isPending,
+        isErrorTickets: query.isError,
+        errorTickets: query.error,
+        getPriorityBadgeVariant,
+        getCategoryBadgeVariant
+    };
+}

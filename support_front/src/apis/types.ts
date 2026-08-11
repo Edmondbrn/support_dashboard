@@ -13,6 +13,7 @@ export interface ApiCallResponse {
 export type UserRole = Database["public"]["Enums"]["roles"];
 export type TicketPriority = Database["public"]["Enums"]["ticket_priority"];
 export type TicketStatus = Database["public"]["Enums"]["ticket_status"];
+export type TicketCategory = Database["public"]["Enums"]["ticket_category"];
 
 export interface Profile {
     id: string;
@@ -25,3 +26,14 @@ export interface Category {
     label: string;
 }
 
+
+export interface Ticket {
+    id: string,
+    description: string,
+    agent_username: string | null;
+    category: TicketCategory;
+    status: TicketStatus;
+    priority: TicketPriority;
+    created_at: string;
+    closed_by: string | null;
+}

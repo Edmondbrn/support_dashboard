@@ -29,6 +29,16 @@ CREATE TYPE public.ticket_status AS ENUM (
 
 COMMENT ON TYPE public.ticket_status IS 'Status of a ticket';
 
+
+CREATE TYPE public.ticket_category AS ENUM (
+  'software',
+  'hardware',
+  'delivery',
+  'payment'
+);
+
+COMMENT ON TYPE public.ticket_category IS 'Category of a ticket';
+
 -- Utility function for RLS
 
 
@@ -149,24 +159,11 @@ GRANT EXECUTE ON FUNCTION public.is_agent() TO authenticated;
 
 -------------- Table definition ---------------------
 
-CREATE TABLE public.categories (
-  id         uuid         DEFAULT gen_random_uuid() NOT NULL,
-  label      text         DEFAULT ''::text NOT NULL,
-  created_by public.roles NOT NULL,
-  CHECK (length(label) <= 50)
-);
-COMMENT ON TABLE public.categories IS 'Categories for ticket';
-ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.categories ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
-
-grant select on public.categories to authenticated;
-grant all on public.categories to service_role;
-
 CREATE TABLE public.tickets (
   id          uuid                     DEFAULT gen_random_uuid() NOT NULL,
   client_id   uuid                     NOT NULL,
   agent_id    uuid                     DEFAULT NULL,
-  category_id uuid                     NOT NULL,
+  category    ticket_category          NOT NULL,
   status      public.ticket_status     NOT NULL DEFAULT 'open'::ticket_status,
   description text                     NOT NULL,
   priority    public.ticket_priority   NOT NULL,
@@ -212,8 +209,6 @@ ALTER TABLE public.messages ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
 grant select, insert on public.messages to authenticated;
 grant all on public.messages to service_role;
 
-------- Categories --------
-
 
 
 ------- Messages --------
@@ -235,9 +230,6 @@ ALTER TABLE public.profiles
 ------- Tickets --------
 ALTER TABLE public.tickets
   ADD CONSTRAINT tickets_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-ALTER TABLE public.tickets
-  ADD CONSTRAINT tickets_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE public.tickets
   ADD CONSTRAINT tickets_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
@@ -506,17 +498,22 @@ CREATE TRIGGER set_ticket_default_fields_trigger AFTER INSERT ON public.tickets 
 -- so only RPC function handles updates
 
 
-CREATE POLICY "Everyone can see categories" ON public.categories
-  FOR SELECT
-  TO anon, authenticated
-  USING (true);
-
-
-
 CREATE POLICY "Authenticated can see their profile" ON public.profiles
   FOR SELECT
   TO authenticated
   USING ((id = ( SELECT auth.uid() AS uid)));
+
+
+CREATE POLICY "Client can see profile of assigned agent" ON public.profiles
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM tickets AS t
+      WHERE t.agent_id = id AND client_id = (SELECT auth.uid())
+    )
+  );
 
 
 CREATE POLICY "Agent and admin can see profiles" ON public.profiles
