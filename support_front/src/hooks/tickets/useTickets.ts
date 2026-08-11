@@ -1,5 +1,5 @@
 import { findTicketsByClient } from "@/apis/public";
-import type { Ticket, TicketCategory, TicketPriority } from "@/apis/types";
+import type { Ticket, TicketCategory, TicketPriority, TicketStatus } from "@/apis/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 
@@ -50,17 +50,42 @@ export default function useTickets() {
 
     /**
      * Helper function to get category badge color
-     * @param priority 
+     * @param category 
      * @returns 
      */
-    const getCategoryBadgeVariant = (category : TicketCategory) => {
+    const getCategoryBadgeVariant = (category: TicketCategory) => {
 
         switch (category) {
             case "software":
                 return "bg-gray-300 text-gray-800"
             case "hardware":
+                return "bg-slate-400 text-white"
             case "delivery":
+                return "bg-indigo-500 text-white"
             case "payment":
+                return "bg-emerald-500 text-white"
+            default:
+                return "bg-gray-300 text-gray-800"
+        }
+    }
+
+    /**
+     * Helper function to get status badge color
+     * @param status 
+     * @returns 
+     */
+    const getStatusBadgeVariant = (status: TicketStatus) => {
+
+        switch (status) {
+            case "open":
+                return "bg-emerald-500 text-white"
+            case "in_progress":
+                return "bg-yellow-500 text-black"
+            case "resolved":
+                return "bg-blue-600 text-white"
+            case "closed":
+            default:
+                return "bg-gray-400 text-gray-950"
         }
     }
 
@@ -70,6 +95,7 @@ export default function useTickets() {
         isErrorTickets: query.isError,
         errorTickets: query.error,
         getPriorityBadgeVariant,
-        getCategoryBadgeVariant
+        getCategoryBadgeVariant,
+        getStatusBadgeVariant
     };
 }
