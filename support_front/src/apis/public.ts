@@ -64,8 +64,10 @@ export async function findTicketsByClient(
     const {data, error} = await supabase
                         .from("tickets")
                         .select(`
+                            client_id,
+                            agent_id,
                             id, 
-                            agent_username:profiles!agent_id (
+                            agent_profile:profiles!agent_id (
                                 username
                             ),
                             description,

@@ -45,10 +45,13 @@ export default function Tickets() {
             <h1 className="text-lg font-medium text-white">Your tickets</h1>
             <p className="text-sm text-slate-400">View the status of your requests</p>
 
+            {
+                tickets.length === 0 && <span className="text-slate-400 mt-5">You did not submit any ticket yet</span>
+            }
+            
             <ul className="grid w-2/3 list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 md:grid-cols-3">
-                {tickets.length === 0
-                    ? <li className="text-slate-400">No tickets found</li>
-                    : (
+                {tickets.length > 0
+                    && (
                         tickets.map((ticket) => (
                             <li key={ticket.id}>
                                 <Card 
@@ -65,7 +68,7 @@ export default function Tickets() {
                                     }}
                                 >
                                     <CardHeader>
-                                        <CardTitle className="flex flex-col items-center gap-3 md:flex-row md:justify-between">
+                                        <CardTitle className="flex flex-col items-center gap-3 lg:flex-row lg:justify-between">
                                             <Badge className={twJoin(["py-4 text-xl font-semibold capitalize", getCategoryBadgeVariant(ticket.category)])}>
                                                 {ticket.category}
                                             </Badge>
@@ -77,18 +80,18 @@ export default function Tickets() {
 
                                     <CardContent >
                                         <dl className="flex flex-col gap-5">
-                                            <div className="flex flex-col items-start">
+                                            <div className="flex flex-col items-start gap-2">
                                                 <dt className="font-semibold underline">Description</dt>
                                                 <dd>{ticket.description}</dd>
                                             </div>
 
-                                            <div className="flex flex-col items-start">
-                                                <dt className="font-semibold">Agent</dt>
+                                            <div className="flex flex-col items-start gap-2">
+                                                <dt className="font-semibold underline">Agent</dt>
                                                 <dd>{ticket.agent_username ?? "Not assigned yet"}</dd>
                                             </div>
 
-                                            <div className="flex flex-col items-start">
-                                                <dt className="font-semibold">Status</dt>
+                                            <div className="flex flex-col items-start gap-2">
+                                                <dt className="font-semibold underline">Status</dt>
                                                 <dd>
                                                     <Badge className={twJoin(["font-semibold capitalize", getStatusBadgeVariant(ticket.status)])}>
                                                         {ticket.status.replaceAll("_", " ")}

@@ -504,16 +504,18 @@ CREATE POLICY "Authenticated can see their profile" ON public.profiles
   USING ((id = ( SELECT auth.uid() AS uid)));
 
 
-CREATE POLICY "Client can see profile of assigned agent" ON public.profiles
-  FOR SELECT
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1
-      FROM tickets AS t
-      WHERE t.agent_id = id AND client_id = (SELECT auth.uid())
-    )
-  );
+create policy "clients can view profile of their assigned agent"
+on profiles
+for select
+to authenticated
+using (
+  role = 'agent'
+  and exists (
+    select 1 from tickets
+    where tickets.agent_id = profiles.id
+    and tickets.client_id = (SELECT auth.uid() AS uid)
+  )
+);
 
 
 CREATE POLICY "Agent and admin can see profiles" ON public.profiles

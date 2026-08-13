@@ -1,7 +1,7 @@
 import { createTicket } from "@/apis/public";
 import type { TicketCategory, TicketPriority } from "@/apis/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { appRoutes } from "@/config";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
 import { useState } from "react";
@@ -26,6 +26,7 @@ export default function useCreateTicket() {
     const { user } = useAuth();
     const [form, setForm] = useState<CreateTicketForm>(DEFAULT_FORM);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     /**
      * Check if all the required fields are filled
@@ -47,6 +48,8 @@ export default function useCreateTicket() {
                 showErrorToast(`Error, cannot create the ticket because: ${res.errorMsg}`);
                 return;
             }
+            // invalidate cache query ticket to be able to reftech them after a creation
+            queryClient.invalidateQueries({queryKey: [{"client": user?.id}]})
             showSuccessToast("Ticket created successfully");
             navigate(appRoutes.TICKETS);
         },
