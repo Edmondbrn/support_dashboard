@@ -8,7 +8,7 @@ import {
     type TestUserFixture,
     makeTestEmail,
 } from "./helpers";
-import { createTicket, deleteTicket, findProfile, findTicketsByClient } from "@/apis/public";
+import { claimTicket, createTicket, deleteTicket, findAssignedTicketsByAgent, findProfile, findTicketsByClient, findUnassignedTicket } from "@/apis/public";
 import {v4 as uuidv4} from 'uuid';
 
 const trackedEmails: string[] = [];
@@ -164,6 +164,128 @@ describe("public tests", () => {
         });
     });
 
+
+    describe("findAssignedTicketsByAgent", () => {
+        it("returns only the tickets assigned to the given agent", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            const assignedId = (await createTicket(fakeUser1!.userId, "software", "low", "Assigned to agent")).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: fakeUser2!.userId }).eq("id", assignedId.id);
+
+            await createTicket(fakeUser1!.userId, "delivery", "high", "Still unassigned");
+
+            const res = await findAssignedTicketsByAgent(fakeUser2!.userId);
+
+            expect(res.status).toBe("success");
+            const tickets = res.data as { id: string; description: string }[];
+            expect(tickets).toHaveLength(1);
+            expect(tickets[0].id).toBe(assignedId.id);
+            expect(tickets[0].description).toBe("Assigned to agent");
+        });
+
+        it("returns an empty array for an agent with no assigned tickets", async () => {
+            const res = await findAssignedTicketsByAgent(fakeUser2!.userId);
+
+            expect(res.status).toBe("success");
+            expect(res.data).toEqual([]);
+        });
+
+        it("includes the assigned agent's username", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            const assignedId = (await createTicket(fakeUser1!.userId, "hardware", "medium", "With agent username")).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: fakeUser2!.userId }).eq("id", assignedId.id);
+
+            const res = await findAssignedTicketsByAgent(fakeUser2!.userId);
+
+            expect(res.status).toBe("success");
+            const tickets = res.data as { agent_profile: { username: string } | null }[];
+            expect(tickets[0].agent_profile?.username).toBe(fakeUser2!.username);
+        });
+    });
+
+    describe("claimTicket", () => {
+        it("lets an agent claim an unassigned ticket", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "high", "To be claimed")).data as { id: string };
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail2, password: fakePassword2 });
+
+            const res = await claimTicket(ticket.id, fakeUser2!.userId);
+
+            expect(res.status).toBe("success");
+
+            const { data: dbTicket, error } = await adminClient
+                .from("tickets")
+                .select("agent_id")
+                .eq("id", ticket.id)
+                .maybeSingle();
+
+            expect(error).toBeNull();
+            expect(dbTicket?.agent_id).toBe(fakeUser2!.userId);
+        });
+
+        it("refuses to claim a ticket that has already been claimed", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "high", "Already claimed")).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: fakeUser2!.userId }).eq("id", ticket.id);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail2, password: fakePassword2 });
+
+            const res = await claimTicket(ticket.id, fakeUser2!.userId);
+
+            expect(res.status).toBe("fail");
+            expect(res.errorMsg).toBeDefined();
+            expect(res.errorCode).toBe("42501") // 403 forbidden
+        });
+
+        it("refuses to let a non-agent claim a ticket", async () => {
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "low", "Client cannot claim")).data as { id: string };
+
+            const res = await claimTicket(ticket.id, fakeUser1!.userId);
+
+            expect(res.status).toBe("fail");
+            expect(res.errorMsg).toBeDefined();
+            expect(res.errorCode).toBe("42501") // 403 forbidden
+        });
+    });
+
+    describe("findUnassignedTicket", () => {
+        it("returns only the tickets without an assigned agent", async () => {
+            const unassignedId = (await createTicket(fakeUser1!.userId, "delivery", "low", "Unassigned ticket")).data as { id: string };
+
+            await createTicket(fakeUser1!.userId, "software", "medium", "Another unassigned");
+
+            const assignedId = (await createTicket(fakeUser1!.userId, "payment", "high", "Assigned one")).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: fakeUser2!.userId }).eq("id", assignedId.id);
+
+            const res = await findUnassignedTicket();
+
+            expect(res.status).toBe("success");
+            const tickets = res.data as { id: string }[];
+            expect(tickets).toHaveLength(2);
+            expect(tickets.some((t) => t.id === unassignedId.id)).toBe(true);
+            expect(tickets.some((t) => t.id === assignedId.id)).toBe(false);
+        });
+
+        it("returns an empty array when every ticket is assigned", async () => {
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "low", "Assigned")).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: fakeUser2!.userId }).eq("id", ticket.id);
+
+            const res = await findUnassignedTicket();
+
+            expect(res.status).toBe("success");
+            expect(res.data).toEqual([]);
+        });
+    });
 
     describe("deletTicket", () => {
         it("Delete the open ticket", async () => {
