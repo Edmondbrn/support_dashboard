@@ -38,7 +38,7 @@ export async function createTicket(
                             "category": category,
                             "description": description,
                             "priority": priority
-                        });
+                        }).select("id").single();
 
     if (error) {
         console.error("[ERROR] Supabase error for creating ticket", error.message);
@@ -64,8 +64,6 @@ export async function findTicketsByClient(
     const {data, error} = await supabase
                         .from("tickets")
                         .select(`
-                            client_id,
-                            agent_id,
                             id, 
                             agent_profile:profiles!agent_id (
                                 username
@@ -86,4 +84,28 @@ export async function findTicketsByClient(
 
     return {status: "success", data: data};
     
+}
+
+/**
+ * API to delete an open ticket
+ * @param ticketId 
+ * @returns 
+ */
+export async function deleteTicket(
+    ticketId : string
+) : Promise<ApiCallResponse> {
+
+
+    const {data, error} = await supabase
+                            .from("tickets")
+                            .delete()
+                            .eq("id", ticketId);
+
+    if (error) {
+        console.error("[ERROR] Supabase error while deleting the ticket", error.message);
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
+    }
+
+    return {status: "success", data: data}
+
 }

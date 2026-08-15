@@ -30,7 +30,7 @@ export interface Category {
 export interface Ticket {
     id: string,
     description: string,
-    agent_username: string | null;
+    agent_profile: { username: string } | null;
     category: TicketCategory;
     status: TicketStatus;
     priority: TicketPriority;

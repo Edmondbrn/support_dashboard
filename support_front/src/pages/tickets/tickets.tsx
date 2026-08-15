@@ -6,6 +6,7 @@ import useTickets from "@/hooks/tickets/useTickets";
 import { Spinner } from "@/components/ui/spinner";
 import { timeStampToDate } from "@/utils/dateUtils";
 import { Badge } from "@/components/ui/badge";
+import { Btn } from "@/components/shared/button";
 
 /**
  * Lists the tickets of the current user (client view).
@@ -18,7 +19,10 @@ export default function Tickets() {
         errorTickets,
         getPriorityBadgeVariant,
         getCategoryBadgeVariant,
-        getStatusBadgeVariant
+        getStatusBadgeVariant,
+        isDeleteTicketLoading,
+        deletingTicketId,
+        deleteTicketQuery,
     } = useTickets();
 
     if (isLoadingTickets) {
@@ -87,7 +91,7 @@ export default function Tickets() {
 
                                             <div className="flex flex-col items-start gap-2">
                                                 <dt className="font-semibold underline">Agent</dt>
-                                                <dd>{ticket.agent_username ?? "Not assigned yet"}</dd>
+                                                <dd>{ticket.agent_profile?.username ?? "Not assigned yet"}</dd>
                                             </div>
 
                                             <div className="flex flex-col items-start gap-2">
@@ -98,6 +102,18 @@ export default function Tickets() {
                                                     </Badge>
                                                 </dd>
                                             </div>
+
+                                            {/* Display delete button only if the ticket is still open */}
+                                            {
+                                                ticket.status === "open" && (
+                                                    <Btn isLoading={isDeleteTicketLoading && deletingTicketId === ticket.id} version="danger" onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        deleteTicketQuery(ticket.id)
+                                                    }}>
+                                                        Delete
+                                                    </Btn>
+                                                )
+                                            }
 
                                             <time
                                                 dateTime={ticket.created_at}

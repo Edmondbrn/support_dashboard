@@ -1,16 +1,18 @@
-import { findTicketsByClient } from "@/apis/public";
+import { deleteTicket, findTicketsByClient } from "@/apis/public";
 import type { Ticket, TicketCategory, TicketPriority, TicketStatus } from "@/apis/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { showErrorToast, showSuccessToast } from "@/utils/showToast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 
 
 export default function useTickets() {
 
     const { user } = useAuth();
+    const queryClient = useQueryClient();
 
     // query to find all the tickets of the current client
-    const query = useQuery({
+    const getTicketQuery = useQuery({
         queryKey: [{"client": user?.id}],
         staleTime: 60 * 5 * 1000, // 5 minutes
         queryFn: async (): Promise<Ticket[]> => {
@@ -27,6 +29,26 @@ export default function useTickets() {
             return res.data as Ticket[];
         },
     });
+
+    // query to delete a ticket
+    const deleteTicketQuery = useMutation({
+        mutationFn: (ticketId : string) => deleteTicket(
+            ticketId,
+        ),
+        onSuccess: (res) => {
+            if (res.status === "fail") {
+                showErrorToast(`Error, cannot delete the ticket because: ${res.errorMsg}`);
+                return;
+            }
+            // invalidate cache query ticket to be able to reftech them after a deletion
+            queryClient.invalidateQueries({queryKey: [{"client": user?.id}]})
+            showSuccessToast("Ticket deleted");
+        },
+        onError: (error) => {
+            showErrorToast(`Error, cannot delete the ticket because: ${error.message}`);
+        },
+    });
+
 
 
     /**
@@ -90,12 +112,15 @@ export default function useTickets() {
     }
 
     return {
-        tickets: query.data ?? [],
-        isLoadingTickets: query.isPending,
-        isErrorTickets: query.isError,
-        errorTickets: query.error,
+        tickets: getTicketQuery.data ?? [],
+        isLoadingTickets: getTicketQuery.isPending,
+        isErrorTickets: getTicketQuery.isError,
+        errorTickets: getTicketQuery.error,
         getPriorityBadgeVariant,
         getCategoryBadgeVariant,
-        getStatusBadgeVariant
+        getStatusBadgeVariant,
+        isDeleteTicketLoading: deleteTicketQuery.isPending,
+        deletingTicketId: deleteTicketQuery.variables,
+        deleteTicketQuery: deleteTicketQuery.mutate
     };
 }

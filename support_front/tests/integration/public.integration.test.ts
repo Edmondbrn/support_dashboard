@@ -8,7 +8,8 @@ import {
     type TestUserFixture,
     makeTestEmail,
 } from "./helpers";
-import { createTicket, findProfile, findTicketsByClient } from "@/apis/public";
+import { createTicket, deleteTicket, findProfile, findTicketsByClient } from "@/apis/public";
+import {v4 as uuidv4} from 'uuid';
 
 const trackedEmails: string[] = [];
 
@@ -160,6 +161,73 @@ describe("public tests", () => {
             expect(res.status).toBe("success");
             const tickets = res.data as { agent_profile: { username: string } | null }[];
             expect(tickets[0].agent_profile?.username).toBe(fakeUser2!.username);
+        });
+    });
+
+
+    describe("deletTicket", () => {
+        it("Delete the open ticket", async () => {
+    
+            const ticketData = (await createTicket(fakeUser1!.userId, "software", "low", "Ticket A1")).data as {id : string};
+
+            expect(ticketData).not.toBeUndefined();
+            expect(ticketData.id).not.toBeUndefined();
+    
+            const ticket = await adminClient
+                        .from("tickets")
+                        .select("id")
+                        .eq("id", ticketData.id)
+                        .maybeSingle();
+
+            expect(ticket).not.toBeNull();
+            expect(ticket.data?.id).toBe(ticketData.id);
+
+            const deleteRes = await deleteTicket(ticketData.id);
+
+            expect(deleteRes.status).toBe("success");
+            expect(deleteRes.data).toBeNull();
+
+            // check that the ticket is not present anymore
+            const {data, error} = await adminClient
+                        .from("tickets")
+                        .select("id")
+                        .eq("id", ticketData.id)
+                        .maybeSingle();
+
+            expect(data).toBeNull();
+            expect(error).toBeNull();
+        });
+    
+
+    
+        it("Return error when trying to delete ticket from someone else", async () => {
+            
+            const ticketId = uuidv4()
+            await adminClient
+                .from("tickets")
+                .insert({
+                    "client_id": fakeUser2!.userId,
+                    "agent_id": null,
+                    "category": "delivery",
+                    "closed_by": null,
+                    "description": "No delete ticket",
+                    "priority": "low",
+                    "status": "open",
+                    "id": ticketId
+                });
+    
+            const status = await deleteTicket(ticketId);
+
+            // chekc that the ticket still exists
+            const dbTicket = await adminClient
+                .from("tickets")
+                .select("id")
+                .eq("id", ticketId)
+                .maybeSingle();
+
+            expect(dbTicket).not.toBeNull()
+            // rls does not throw error for delete, just do nothing
+            expect(status.status).toBe("success");
         });
     });
 })

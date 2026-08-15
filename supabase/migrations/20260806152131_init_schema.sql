@@ -175,7 +175,7 @@ COMMENT ON TABLE public.tickets IS 'Ticket created by client';
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tickets ADD CONSTRAINT tickets_pkey PRIMARY KEY (id);
 
-grant select, insert on public.tickets to authenticated;
+grant select, insert, delete on public.tickets to authenticated;
 grant all on public.tickets to service_role;
 
 CREATE TABLE public.profiles (
@@ -568,6 +568,15 @@ CREATE POLICY "Client can create ticket" ON public.tickets
   FOR INSERT
   TO authenticated
   WITH CHECK ((client_id = ( SELECT auth.uid() AS uid)));
+
+
+CREATE POLICY "Client can delete ticket if they are open" ON public.tickets
+  FOR DELETE
+  TO authenticated
+  USING (
+    (client_id = ( SELECT auth.uid() AS uid))
+    AND status = 'open'::ticket_status
+  );
 
 CREATE POLICY "Client owns the ticket" ON public.tickets
   FOR SELECT
