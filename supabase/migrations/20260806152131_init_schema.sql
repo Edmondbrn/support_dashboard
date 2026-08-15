@@ -218,8 +218,7 @@ ALTER TABLE public.messages
 ALTER TABLE public.messages
   ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-CREATE INDEX messages_created_at_id_idx ON public.messages (created_at, id);
-CREATE INDEX messages_ticket_id_idx ON public.messages (ticket_id);
+CREATE INDEX messages_created_at_ticket_id_idx ON public.messages (ticket_id, created_at);
 
 
 ------- Profiles --------
