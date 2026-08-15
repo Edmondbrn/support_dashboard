@@ -86,6 +86,35 @@ export async function findTicketsByClient(
     
 }
 
+
+/**
+ * API to find unassigned ticket to let agent choose one
+ * @returns 
+ */
+export async function findUnassignedTicket(
+
+) : Promise<ApiCallResponse> {
+    const {data, error} = await supabase
+                                .from("tickets")
+                                .select(`
+                                    id,
+                                    description,
+                                    priority,
+                                    status,
+                                    created_at,
+                                    category
+                                `)
+                                .is("agent_id", null);
+
+    if (error) {
+        console.error("[ERROR] Supabase error for collecting unassigned tickets", error.message);
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
+    }
+
+    return {status: "success", data: data}
+
+}
+
 /**
  * API to delete an open ticket
  * @param ticketId 

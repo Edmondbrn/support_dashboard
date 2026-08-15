@@ -563,10 +563,13 @@ CREATE POLICY "Ticket participants can see messages" ON public.messages
     );
 
 
-CREATE POLICY "Agent sees assigned tickets" ON public.tickets
+CREATE POLICY "Agent sees assigned and unassigned tickets" ON public.tickets
   FOR SELECT
   TO authenticated
-  USING ((agent_id = ( SELECT auth.uid() AS uid)));
+  USING (
+    agent_id IS NULL OR
+    (agent_id = ( SELECT auth.uid() AS uid))
+  );
 
 CREATE POLICY "Client can create ticket" ON public.tickets
   FOR INSERT

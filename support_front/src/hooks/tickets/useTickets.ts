@@ -1,4 +1,4 @@
-import { deleteTicket, findTicketsByClient } from "@/apis/public";
+import { deleteTicket, findTicketsByClient, findUnassignedTicket } from "@/apis/public";
 import type { Ticket, TicketCategory, TicketPriority, TicketStatus } from "@/apis/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
@@ -12,8 +12,8 @@ export default function useTickets() {
     const queryClient = useQueryClient();
 
     // query to find all the tickets of the current client
-    const getTicketQuery = useQuery({
-        queryKey: [{"client": user?.id}],
+    const findClientTicketQuery = useQuery({
+        queryKey: [{"client": user?.id, "action": "find-tickets"}],
         staleTime: 60 * 5 * 1000, // 5 minutes
         queryFn: async (): Promise<Ticket[]> => {
             if (!user) {
@@ -23,6 +23,25 @@ export default function useTickets() {
             const res = await findTicketsByClient(user.id);
             if (res.status === "fail") {
                 console.error("[ERROR] Cannot find client's tickets", res.errorMsg);
+                return [];
+            }
+
+            return res.data as Ticket[];
+        },
+    });
+
+
+    const findUnassignedTicketQuery = useQuery({
+        queryKey: [{"action": "find-unassigned-tickets"}],
+        staleTime: 60 * 5 * 1000, // 5 minutes
+        queryFn: async (): Promise<Ticket[]> => {
+            if (!user) {
+                return []
+            }
+
+            const res = await findUnassignedTicket();
+            if (res.status === "fail") {
+                console.error("[ERROR] Cannot find unassigned tickets", res.errorMsg);
                 return [];
             }
 
@@ -41,7 +60,7 @@ export default function useTickets() {
                 return;
             }
             // invalidate cache query ticket to be able to reftech them after a deletion
-            queryClient.invalidateQueries({queryKey: [{"client": user?.id}]})
+            queryClient.invalidateQueries({queryKey: [{"client": user?.id, "action": "find-tickets"}]})
             showSuccessToast("Ticket deleted");
         },
         onError: (error) => {
@@ -112,10 +131,14 @@ export default function useTickets() {
     }
 
     return {
-        tickets: getTicketQuery.data ?? [],
-        isLoadingTickets: getTicketQuery.isPending,
-        isErrorTickets: getTicketQuery.isError,
-        errorTickets: getTicketQuery.error,
+        clientTickets: findClientTicketQuery.data ?? [],
+        isClientTicketLoading: findClientTicketQuery.isPending,
+        isClientTicketError: findClientTicketQuery.isError,
+        clientTicketError: findClientTicketQuery.error,
+        unassignedTickets: findUnassignedTicketQuery.data ?? [],
+        isUnassignedTicketLoading: findUnassignedTicketQuery.isPending,
+        isUnassignedTicketError: findUnassignedTicketQuery.isError,
+        unassignedTicketError: findUnassignedTicketQuery.error,
         getPriorityBadgeVariant,
         getCategoryBadgeVariant,
         getStatusBadgeVariant,

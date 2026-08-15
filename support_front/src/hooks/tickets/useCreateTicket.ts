@@ -49,7 +49,7 @@ export default function useCreateTicket() {
                 return;
             }
             // invalidate cache query ticket to be able to reftech them after a creation
-            queryClient.invalidateQueries({queryKey: [{"client": user?.id}]})
+            queryClient.invalidateQueries({queryKey: [{"client": user?.id, "action": "find-tickets"}]})
             showSuccessToast("Ticket created successfully");
             navigate(appRoutes.TICKETS);
         },

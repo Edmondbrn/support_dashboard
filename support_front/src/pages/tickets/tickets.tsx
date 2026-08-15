@@ -13,10 +13,10 @@ import { Btn } from "@/components/shared/button";
  */
 export default function Tickets() {
     const {
-        tickets,
-        isLoadingTickets,
-        isErrorTickets,
-        errorTickets,
+        clientTickets: tickets,
+        isClientTicketLoading: isLoadingTickets,
+        isClientTicketError: isErrorTickets,
+        clientTicketError: errorTickets,
         getPriorityBadgeVariant,
         getCategoryBadgeVariant,
         getStatusBadgeVariant,
