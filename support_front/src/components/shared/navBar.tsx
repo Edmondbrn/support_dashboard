@@ -13,6 +13,8 @@ import {
     TicketPlus
 } from "lucide-react";
 import { NavLink } from "react-router";
+import { getUserInitials } from "@/utils/userUtils";
+import UserAvatar from "./UserAvatar";
 
 type UserRole = Database["public"]["Enums"]["roles"];
 
@@ -52,13 +54,7 @@ export default function NavBar() {
         return null;
     }
 
-    const displayName = profile?.username ?? user.email ?? "User";
-    const initials = displayName
-        .split(/\s+/) // split by space
-        .map((part) => part.charAt(0)) // get first letter of each block
-        .slice(0, 2) // keep only the two first letters
-        .join("")
-        .toUpperCase();
+    const initials = getUserInitials(profile);
 
     return (
         <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/60 backdrop-blur-md">
@@ -97,11 +93,9 @@ export default function NavBar() {
                 {/* User area */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                        <span className="flex size-8 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white ring-1 ring-white/10">
-                            {initials}
-                        </span>
+                        <UserAvatar initials={initials} />
                         <span className="hidden text-sm text-slate-200 md:block">
-                            {displayName}
+                            {profile?.username ?? "User"}
                         </span>
                     </div>
                     <Button

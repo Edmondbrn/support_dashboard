@@ -12,6 +12,7 @@ import NavBar from './components/shared/navBar';
 import { useAuth } from './contexts/AuthContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { appRoutes } from './config';
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 
 const RootLayout = () => {
@@ -80,7 +81,9 @@ const router = createBrowserRouter([
 function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <TooltipProvider>
+        <RouterProvider router={router} />
+      </TooltipProvider>
     </AuthProvider>
   );
 }
