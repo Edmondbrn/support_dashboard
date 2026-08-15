@@ -197,6 +197,39 @@ describe("public tests", () => {
             expect(data).toBeNull();
             expect(error).toBeNull();
         });
+
+
+        it("Cannot delete the ticket which is not open", async () => {
+    
+            const ticketId = uuidv4()
+            await adminClient
+                .from("tickets")
+                .insert({
+                    "client_id": fakeUser1!.userId,
+                    "agent_id": null,
+                    "category": "delivery",
+                    "closed_by": null,
+                    "description": "No delete ticket",
+                    "priority": "low",
+                    "status": "in_progress",
+                    "id": ticketId
+                });
+
+            const deleteRes = await deleteTicket(ticketId);
+
+            expect(deleteRes.status).toBe("success");
+            expect(deleteRes.data).toBeNull();
+
+            // check that the ticket is still present
+            const {data, error} = await adminClient
+                        .from("tickets")
+                        .select("id")
+                        .eq("id", ticketId)
+                        .maybeSingle();
+
+            expect(data).not.toBeNull();
+            expect(error).toBeNull();
+        });
     
 
     

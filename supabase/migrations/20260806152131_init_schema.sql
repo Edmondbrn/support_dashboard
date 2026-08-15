@@ -491,7 +491,11 @@ END;
 $function$;
 
 
-CREATE TRIGGER set_ticket_default_fields_trigger AFTER INSERT ON public.tickets FOR EACH ROW EXECUTE FUNCTION public.set_ticket_default_fields();
+CREATE TRIGGER set_ticket_default_fields_trigger 
+AFTER INSERT ON public.tickets 
+FOR EACH ROW 
+WHEN (row_security_active('public.tickets')) -- do not apply for admin
+EXECUTE FUNCTION public.set_ticket_default_fields();
 ----------- RLS policies --------------
 
 -- No UPDATE RLS policies because they are too complex to handle cleanly (trigger function to avoid the update of fixed values), 
