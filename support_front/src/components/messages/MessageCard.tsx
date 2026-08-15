@@ -23,7 +23,7 @@ export default function MessageCard(props : MessageCardProps) {
 
     const initials = getUserInitials(profile);
     // current user's messages on the right, other ones on the left
-    const msgPosition = profile?.username === props.senderName ? "items-end pl-20" : "items-start pr-20";
+    const msgPosition = profile?.username === props.senderName ? "items-end pl-5 md:pl-20" : "items-start pr-5 md:pr-20";
     const badgePosition = profile?.username === props.senderName ? "-top-5 -right-6" : "-translate-x-10 -translate-y-5";
 
     return (

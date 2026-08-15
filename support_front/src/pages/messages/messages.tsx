@@ -8,12 +8,12 @@ import { MessageSquare, PaperclipIcon, SendHorizonalIcon } from "lucide-react";
 export default function Messages() {
     return (
         // Tchat container 
-        <div className="w-full h-full px-10 py-5">
+        <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col px-10 py-5 ">
             {/* <MessageSquare className="size-10 text-orange-300" />
             <p className="text-lg font-medium text-white">Messages</p> */}
 
             {/* space for messages */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col overflow-y-auto px-10">
                 <MessageCard sentAt="20026-06-15" senderName="agent1">Test message Test messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest message</MessageCard>
                 <MessageCard sentAt="20026-06-15" senderName="agent1">Test message Test messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest message</MessageCard>
                 <MessageCard sentAt="20026-06-15" senderName="client1">Test message Test messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest message</MessageCard>
@@ -21,7 +21,7 @@ export default function Messages() {
             </div>
 
             {/* input text for message */}
-            <div className="fixed bottom-0 left-0 w-full flex items-center gap-3 px-5 py-3">
+            <div className="flex shrink-0 items-center gap-3 px-5 py-3">
                 <button className="cursor-pointer">
                     <PaperclipIcon />
                 </button>
