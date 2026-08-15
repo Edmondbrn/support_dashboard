@@ -218,8 +218,7 @@ ALTER TABLE public.messages
 ALTER TABLE public.messages
   ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-CREATE INDEX messages_created_at_id_idx ON public.messages (created_at, id);
-CREATE INDEX messages_ticket_id_idx ON public.messages (ticket_id);
+CREATE INDEX messages_created_at_ticket_id_idx ON public.messages (ticket_id, created_at);
 
 
 ------- Profiles --------
@@ -563,10 +562,13 @@ CREATE POLICY "Ticket participants can see messages" ON public.messages
     );
 
 
-CREATE POLICY "Agent sees assigned tickets" ON public.tickets
+CREATE POLICY "Agent sees assigned and unassigned tickets" ON public.tickets
   FOR SELECT
   TO authenticated
-  USING ((agent_id = ( SELECT auth.uid() AS uid)));
+  USING (
+    agent_id IS NULL OR
+    (agent_id = ( SELECT auth.uid() AS uid))
+  );
 
 CREATE POLICY "Client can create ticket" ON public.tickets
   FOR INSERT
