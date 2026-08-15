@@ -29,6 +29,16 @@ CREATE TYPE public.ticket_status AS ENUM (
 
 COMMENT ON TYPE public.ticket_status IS 'Status of a ticket';
 
+
+CREATE TYPE public.ticket_category AS ENUM (
+  'software',
+  'hardware',
+  'delivery',
+  'payment'
+);
+
+COMMENT ON TYPE public.ticket_category IS 'Category of a ticket';
+
 -- Utility function for RLS
 
 
@@ -149,34 +159,23 @@ GRANT EXECUTE ON FUNCTION public.is_agent() TO authenticated;
 
 -------------- Table definition ---------------------
 
-CREATE TABLE public.categories (
-  id         uuid         DEFAULT gen_random_uuid() NOT NULL,
-  label      text         DEFAULT ''::text NOT NULL,
-  created_by public.roles NOT NULL,
-  CHECK (length(label) <= 50)
-);
-COMMENT ON TABLE public.categories IS 'Categories for ticket';
-ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.categories ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
-
-grant select on public.categories to authenticated;
-grant all on public.categories to service_role;
-
 CREATE TABLE public.tickets (
   id          uuid                     DEFAULT gen_random_uuid() NOT NULL,
   client_id   uuid                     NOT NULL,
-  agent_id    uuid,
-  category_id uuid                     NOT NULL,
-  status      public.ticket_status     NOT NULL,
+  agent_id    uuid                     DEFAULT NULL,
+  category    ticket_category          NOT NULL,
+  status      public.ticket_status     NOT NULL DEFAULT 'open'::ticket_status,
+  description text                     NOT NULL,
   priority    public.ticket_priority   NOT NULL,
-  created_at  timestamp with time zone DEFAULT now() NOT NULL,
-  closed_by   uuid
+  created_at  timestamp with time zone DEFAULT NOW() NOT NULL,
+  closed_by   uuid                     DEFAULT NULL,
+  CHECK (length(description) <= 255)
 );
 COMMENT ON TABLE public.tickets IS 'Ticket created by client';
 ALTER TABLE public.tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tickets ADD CONSTRAINT tickets_pkey PRIMARY KEY (id);
 
-grant select, insert on public.tickets to authenticated;
+grant select, insert, delete on public.tickets to authenticated;
 grant all on public.tickets to service_role;
 
 CREATE TABLE public.profiles (
@@ -210,8 +209,6 @@ ALTER TABLE public.messages ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
 grant select, insert on public.messages to authenticated;
 grant all on public.messages to service_role;
 
-------- Categories --------
-
 
 
 ------- Messages --------
@@ -233,9 +230,6 @@ ALTER TABLE public.profiles
 ------- Tickets --------
 ALTER TABLE public.tickets
   ADD CONSTRAINT tickets_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
-
-ALTER TABLE public.tickets
-  ADD CONSTRAINT tickets_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE public.tickets
   ADD CONSTRAINT tickets_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
@@ -477,23 +471,55 @@ $function$;
 
 CREATE TRIGGER create_profile_trigger AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.create_profile();
 
+
+CREATE FUNCTION public.set_ticket_default_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+BEGIN
+
+  -- force default fields values
+  UPDATE public.tickets AS t
+  SET created_at = NOW(), status = 'open'::ticket_status, agent_id = NULL, closed_by = NULL
+  WHERE t.id = NEW.id;
+
+  RETURN NEW;
+  
+END;
+$function$;
+
+
+CREATE TRIGGER set_ticket_default_fields_trigger 
+AFTER INSERT ON public.tickets 
+FOR EACH ROW 
+WHEN (row_security_active('public.tickets')) -- do not apply for admin
+EXECUTE FUNCTION public.set_ticket_default_fields();
 ----------- RLS policies --------------
 
 -- No UPDATE RLS policies because they are too complex to handle cleanly (trigger function to avoid the update of fixed values), 
 -- so only RPC function handles updates
 
 
-CREATE POLICY "Everyone can see categories" ON public.categories
-  FOR SELECT
-  TO anon, authenticated
-  USING (true);
-
-
-
 CREATE POLICY "Authenticated can see their profile" ON public.profiles
   FOR SELECT
   TO authenticated
   USING ((id = ( SELECT auth.uid() AS uid)));
+
+
+create policy "clients can view profile of their assigned agent"
+on profiles
+for select
+to authenticated
+using (
+  role = 'agent'
+  and exists (
+    select 1 from tickets
+    where tickets.agent_id = profiles.id
+    and tickets.client_id = (SELECT auth.uid() AS uid)
+  )
+);
 
 
 CREATE POLICY "Agent and admin can see profiles" ON public.profiles
@@ -546,6 +572,15 @@ CREATE POLICY "Client can create ticket" ON public.tickets
   FOR INSERT
   TO authenticated
   WITH CHECK ((client_id = ( SELECT auth.uid() AS uid)));
+
+
+CREATE POLICY "Client can delete ticket if they are open" ON public.tickets
+  FOR DELETE
+  TO authenticated
+  USING (
+    (client_id = ( SELECT auth.uid() AS uid))
+    AND status = 'open'::ticket_status
+  );
 
 CREATE POLICY "Client owns the ticket" ON public.tickets
   FOR SELECT

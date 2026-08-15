@@ -19,5 +19,6 @@ export default defineConfig({
     include: ["tests/integration/**/*.test.ts"],
     testTimeout: 20_000,
     hookTimeout: 20_000,
+    silent: 'passed-only'
   },
 })

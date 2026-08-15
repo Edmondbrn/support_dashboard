@@ -40,6 +40,10 @@
   .bg-glass {
     @apply bg-white/10 border border-white/10 backdrop-blur-md shadow-2xl
   }
+
+  .bg-orange {
+    @apply bg-orange-400
+  }
 }
 
 /* ------------------------------------- */

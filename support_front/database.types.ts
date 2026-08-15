@@ -167,10 +167,6 @@ export type Database = {
       close_ticket: { Args: { p_ticket_id: string }; Returns: boolean }
       get_current_user: { Args: never; Returns: string }
       get_role: { Args: never; Returns: string }
-      get_ticket_agent_username: {
-        Args: { p_ticket_id: string }
-        Returns: string
-      }
       is_admin: { Args: never; Returns: boolean }
       is_agent: { Args: never; Returns: boolean }
       reassign_ticket: {

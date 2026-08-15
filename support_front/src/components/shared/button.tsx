@@ -1,13 +1,14 @@
+import type { BaseUIEvent } from "@base-ui/react";
 import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
 
 
-type BtnVersion = "primary";
+type BtnVersion = "primary" | "secondary" | "danger";
 
 interface BtnProps {
     children: React.ReactNode,
     version: BtnVersion,
-    onClick?: () => void,
+    onClick?: (() => void) | ((e : BaseUIEvent<React.MouseEvent<HTMLButtonElement, MouseEvent>>) => void),
     disabled?: boolean,
     isLoading?: boolean,
 }
@@ -25,6 +26,10 @@ export function Btn(props : BtnProps) {
         switch (props.version) {
             case "primary":
                 return "bg-white/20 hover:bg-white/30 cursor-pointer";
+            case "secondary":
+                return "bg-orange hover:bg-orange-500 cursor-pointer";
+            case "danger":
+                return "bg-red-500 hover:bg-red-600 cursor-pointer";
         }
     } 
 
