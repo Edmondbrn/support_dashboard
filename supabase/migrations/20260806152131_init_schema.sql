@@ -199,8 +199,9 @@ CREATE TABLE public.messages (
   ticket_id      uuid                     NOT NULL,
   sender_id      uuid                     NOT NULL,
   content        text                     DEFAULT ''::text,
-  attachment_url text,
+  attachment_url text                     DEFAULT NULL,
   CHECK (length(content) <= 500)
+  CHECK (length(attachment_url) <= 500)
 );
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
