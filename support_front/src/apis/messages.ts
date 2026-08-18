@@ -8,7 +8,7 @@ import type { ApiCallResponse } from "./types";
  * @param ticketId 
  * @returns 
  */
-export async function findMessagesGorTicket(
+export async function findMessagesForTicket(
     ticketId : string
 ) : Promise<ApiCallResponse> {
 
@@ -45,7 +45,7 @@ export async function sendMessage(
     senderId : string, 
     content : string
 ) : Promise<ApiCallResponse> {
-    
+
     const { data, error } = await supabase
         .from("messages")
         .insert({ ticket_id: ticketId, sender_id: senderId, content })

@@ -15,6 +15,8 @@ export type TicketPriority = Database["public"]["Enums"]["ticket_priority"];
 export type TicketStatus = Database["public"]["Enums"]["ticket_status"];
 export type TicketCategory = Database["public"]["Enums"]["ticket_category"];
 
+export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+
 export interface Profile {
     id: string;
     username: string;

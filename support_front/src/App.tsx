@@ -13,6 +13,7 @@ import { useAuth } from './contexts/AuthContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { appRoutes } from './config';
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { RealtimeProvider } from './contexts/RealTimeContext';
 
 
 const RootLayout = () => {
@@ -22,7 +23,9 @@ const RootLayout = () => {
       {user && <NavBar />}
       {/* Page body */}
       <main className='bg-navy-gradient min-h-screen'>
-        <Outlet />
+        <RealtimeProvider>
+          <Outlet />
+        </RealtimeProvider>
       </main>
     </div>
   );
