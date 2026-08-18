@@ -1,0 +1,83 @@
+import { supabase } from "@/lib/supabase";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+
+
+interface PresenceState {
+    userId: string,
+    username: string,
+}
+
+interface TypingPayload {
+    typing: boolean,
+    username: string,
+}
+
+
+export function useConversationRealtime(
+    ticketId: string | null,
+    currentUserId: string | null,
+    currentUsername?: string,
+) {
+
+
+    const [onlineUsers, setOnlineUsers] = useState<PresenceState[]>([]);
+    const [isTyping, setIsTyping] = useState(false);
+    const channelRef = useRef<RealtimeChannel | null>(null);
+    const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    useEffect(() => {
+
+        if (!ticketId || !currentUserId) return;
+
+        const channel = supabase.channel(`ticket:${ticketId}`);
+        channelRef.current = channel;
+
+        channel
+            .on("presence", {"event": "sync"}, () => {
+                // get connected users data
+                const state = channel.presenceState<PresenceState>;
+                const users = Object.values(state).map((p) => p[0]).filter(Boolean);
+                // check if other users are online
+                setOnlineUsers(users.filter((u) => u.user_id !== currentUserId));
+            })
+            .on("broadcast", {"event": "typing"}, ({payload}: {payload : TypingPayload}) => {
+                // do not process current user typing
+                if (payload.username === currentUsername) return;
+
+                setIsTyping(payload.typing);
+                if (payload.typing) {
+                    // safety net if "typing:false" never arrives
+                    window.clearTimeout(typingTimer.current);
+                    typingTimer.current = window.setTimeout(() => setIsTyping(false), 3000)
+                }
+            })
+            .subscribe((status) => {
+                // send connected status to other connected users
+                if (status === "SUBSCRIBED") {
+                    channel.track({ user_id: currentUserId, username: currentUsername ?? "" });
+                }
+            });
+
+        return () => {
+            window.clearTimeout(typingTimer.current);
+            supabase.removeChannel(channel);
+            channelRef.current = null;
+        };
+    }, [ticketId, currentUserId, currentUsername]);
+
+
+    // send to other users the fact that someone is typing
+    const sendTyping = useCallback((typing: boolean) => {
+        channelRef.current?.send({
+            type: "broadcast",
+            event: "typing",
+            payload: { typing, username: currentUsername ?? "" },
+        });
+    }, [currentUsername]);
+
+
+    return { onlineUsers, isTyping, sendTyping };
+
+}
