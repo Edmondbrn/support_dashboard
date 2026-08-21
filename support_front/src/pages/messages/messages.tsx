@@ -1,45 +1,81 @@
 import MessageCard from "@/components/messages/MessageCard";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRealtime } from "@/contexts/RealTimeContext";
+import { useConversationRealtime } from "@/hooks/messages/useConversationRealtime";
+import useMessages from "@/hooks/messages/useMessages";
 import { MessageSquare, PaperclipIcon, SendHorizonalIcon } from "lucide-react";
+import { useSearchParams } from "react-router";
 
-/**
- * Messages between the client and the support agents (coming soon).
- */
+function formatDate(iso: string): string {
+    return new Date(iso).toLocaleString();
+}
+
+
+
 export default function Messages() {
-    return (
-        // Tchat container 
-        <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col px-10 py-5 ">
-            {/* <MessageSquare className="size-10 text-orange-300" />
-            <p className="text-lg font-medium text-white">Messages</p> */}
 
-            {/* space for messages */}
-            <div className="flex flex-col overflow-y-auto px-10 py-10">
-                <MessageCard sentAt="20026-06-15" senderName="agent1">Test message Test messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest message</MessageCard>
-                <MessageCard sentAt="20026-06-15" senderName="agent1">Test message Test messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest message</MessageCard>
-                <MessageCard sentAt="20026-06-15" senderName="client1">Test message Test messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest message</MessageCard>
-                <MessageCard sentAt="20026-06-15" senderName="client1">Test message Test messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest messageTest message</MessageCard>
+    const {
+        ticketId
+    } = useMessages();
+
+
+
+    if (!ticketId) {
+        return <p className="p-10 text-white">Select a ticket to open the conversation.</p>;
+    }
+
+    return (
+        <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col px-10 py-5">
+            {/* header: conversation partner + online status */}
+            <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+                <span
+                    className={`size-2.5 rounded-full ${
+                        counterpartOnline ? "bg-emerald-400" : "bg-slate-500"
+                    }`}
+                />
+                <span className="text-sm text-white">
+                    {counterpartOnline ? "Online" : "Offline"}
+                </span>
+                {isTyping && (
+                    <span className="ml-auto text-sm italic text-orange-300">
+                        is typing…
+                    </span>
+                )}
             </div>
 
-            {/* input text for message */}
+            {/* messages */}
+            <div ref={listRef} className="flex flex-col overflow-y-auto px-10 py-10">
+                {messages.map((m) => (
+                    <MessageCard
+                        key={m.id}
+                        sentAt={formatDate(m.created_at)}
+                        senderName={m.sender?.username ?? "unknown"}
+                    >
+                        {m.content ?? ""}
+                    </MessageCard>
+                ))}
+            </div>
+
+            {/* input */}
             <div className="flex shrink-0 items-center gap-3 px-5 py-3">
                 <button className="cursor-pointer">
                     <PaperclipIcon />
                 </button>
-                <Input className="border-white/30"
-                    id="fieldgroup-email"
+                <Input
+                    className="border-white/30"
                     type="text"
                     placeholder="Type your message..."
-                    onChange={(e) => console.log(e.target.value)}
+                    value={draft}
                     maxLength={500}
                     minLength={1}
+                    onChange={(e) => handleDraftChange(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") void handleSend(); }}
                 />
-                <button className="cursor-pointer">
-                    <SendHorizonalIcon /> 
+                <button className="cursor-pointer" onClick={() => void handleSend()}>
+                    <SendHorizonalIcon />
                 </button>
             </div>
-
-
-                
         </div>
     );
 }
