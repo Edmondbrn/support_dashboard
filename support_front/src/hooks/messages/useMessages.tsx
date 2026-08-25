@@ -1,7 +1,6 @@
-import { useTransitionStatus } from "@base-ui/react/internals/useTransitionStatus";
-import { useParams, useSearchParams } from "react-router";
+import { useParams } from "react-router";
 import { useConversationRealtime } from "./useConversationRealtime";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { showErrorToast } from "@/utils/showToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtime } from "@/contexts/RealTimeContext";
@@ -16,33 +15,35 @@ export default function useMessages() {
     const { user, profile } = useAuth();
     const { ticketId } = useParams();
 
-    const [draft, setDraft] = useTransitionStatus("");
+    const [draft, setDraft] = useState("");
 
-    const { messages, openTicket } = useRealtime();
-
-
-    const { onlineUsers, isTyping, sendTyping } = useConversationRealtime(
-        ticketId,
-        user?.id ?? null,
-        profile?.username,
-    );
     const listRef = useRef<HTMLDivElement>(null);
     const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const { messages, openTicket } = useRealtime();
+
+    const { onlineUsers, isTyping, sendTyping } = useConversationRealtime(
+        user?.id ?? null,
+        ticketId,
+        profile?.username,
+    );
+
+    const counterpartOnline = onlineUsers.length > 0;
 
     // load history + subscribe to live inserts when the ticket changes
     useEffect(() => {
         if (ticketId) void openTicket(ticketId);
     }, [ticketId, openTicket]);
 
+
     // auto-scroll to the newest message
     useEffect(() => {
         listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
     }, [messages.length]);
 
+
     // stop the "typing" safety timer on unmount
     useEffect(() => () => window.clearTimeout(typingTimer.current), []);
 
-    const counterpartOnline = onlineUsers.length > 0;
 
     const handleDraftChange = (value: string) => {
         setDraft(value);
@@ -79,7 +80,12 @@ export default function useMessages() {
 
     return {
         ticketId,
-        setDraft,
-        draft
+        draft,
+        counterpartOnline,
+        isTyping,
+        messageMutation,
+        handleDraftChange,
+        listRef,
+        messages
     };
 }

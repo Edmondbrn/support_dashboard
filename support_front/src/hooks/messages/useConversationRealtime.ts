@@ -16,8 +16,8 @@ interface TypingPayload {
 
 
 export function useConversationRealtime(
-    ticketId: string | null,
     currentUserId: string | null,
+    ticketId: string | undefined,
     currentUsername?: string,
 ) {
 

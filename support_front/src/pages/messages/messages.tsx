@@ -1,11 +1,7 @@
 import MessageCard from "@/components/messages/MessageCard";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/contexts/AuthContext";
-import { useRealtime } from "@/contexts/RealTimeContext";
-import { useConversationRealtime } from "@/hooks/messages/useConversationRealtime";
 import useMessages from "@/hooks/messages/useMessages";
-import { MessageSquare, PaperclipIcon, SendHorizonalIcon } from "lucide-react";
-import { useSearchParams } from "react-router";
+import { PaperclipIcon, SendHorizonalIcon } from "lucide-react";
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString();
@@ -16,7 +12,14 @@ function formatDate(iso: string): string {
 export default function Messages() {
 
     const {
-        ticketId
+        ticketId,
+        draft,
+        counterpartOnline,
+        isTyping,
+        messageMutation,
+        handleDraftChange,
+        listRef,
+        messages
     } = useMessages();
 
 
@@ -70,9 +73,9 @@ export default function Messages() {
                     maxLength={500}
                     minLength={1}
                     onChange={(e) => handleDraftChange(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") void handleSend(); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") messageMutation.mutate(); }}
                 />
-                <button className="cursor-pointer" onClick={() => void handleSend()}>
+                <button className="cursor-pointer" onClick={() => messageMutation.mutate()}>
                     <SendHorizonalIcon />
                 </button>
             </div>
