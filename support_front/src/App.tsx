@@ -70,7 +70,7 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: appRoutes.MESSAGES,
+        path: appRoutes.MESSAGES_TICKET,
         element: (
           <ProtectedRoute>
             <Messages/>

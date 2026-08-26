@@ -3,19 +3,18 @@ import { Ticket } from "lucide-react";
 import useTickets from "@/hooks/tickets/useTickets";
 import { Spinner } from "@/components/ui/spinner";
 import TicketCard from "@/components/tickets/TicketCard";
+import { useNavigate } from "react-router";
 
 /**
  * Lists the tickets of the current user (client view).
  */
 export default function ClientTickets() {
+    const navigate = useNavigate();
     const {
         clientTickets: tickets,
         isClientTicketLoading: isLoadingTickets,
         isClientTicketError: isErrorTickets,
         clientTicketError: errorTickets,
-        isDeleteTicketLoading,
-        deletingTicketId,
-        deleteTicketQuery,
     } = useTickets();
 
     if (isLoadingTickets) {
@@ -55,9 +54,11 @@ export default function ClientTickets() {
                                     ticket={ticket}
                                     showStatus
                                     showAgent
-                                    actionLabel={ticket.status === "open" ? "Delete" : undefined}
-                                    onAction={ticket.status === "open" ? (t) => deleteTicketQuery(t.id) : undefined} // show delet button only if the task is still open
-                                    isActionLoading={isDeleteTicketLoading && deletingTicketId === ticket.id}
+                                    onOpenConversation={ 
+                                        ticket.status === "open" 
+                                            ? undefined // no message redirection button if ticket still unassigned
+                                            : () => navigate(`/messages/${ticket.id}`)
+                                    }
                                 />
                             </li>
                         ))
