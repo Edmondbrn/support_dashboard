@@ -1,6 +1,7 @@
 import useMessages from "@/hooks/messages/useMessages";
 import { Input } from "@base-ui/react";
 import { InboxIcon, SendHorizontalIcon } from "lucide-react";
+import { Spinner } from "../ui/spinner";
 
 
 /**
@@ -31,7 +32,10 @@ export default function MessageInput() {
                 onKeyDown={(e) => { if (e.key === "Enter") messageMutation.mutate(); }}
             />
             <button className="cursor-pointer transition-colors ease-in-out transiton-1000 bg-orange-400 hover:bg-orange-500 rounded p-1" onClick={() => messageMutation.mutate()}>
-                <SendHorizontalIcon size={32}/>
+                {messageMutation.isPending 
+                    ? <Spinner fontSize={32}/>
+                    : <SendHorizontalIcon size={32}/> 
+                }
             </button>
         </div>
     )

@@ -57,5 +57,5 @@ export async function sendMessage(
         return { status: "fail", errorMsg: error.message, errorCode: error.code };
     }
 
-    return { status: "success", data };
+    return { status: "success", data: data };
 }

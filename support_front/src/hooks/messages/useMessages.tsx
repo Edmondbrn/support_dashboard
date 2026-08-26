@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtime } from "@/contexts/RealTimeContext";
 import { sendMessage } from "@/apis/messages";
 import { useMutation } from "@tanstack/react-query";
+import type { MessageRow } from "@/apis/types";
 
 
 
@@ -19,7 +20,7 @@ export default function useMessages() {
 
     const listRef = useRef<HTMLDivElement>(null);
     const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-    const { messages, openTicket } = useRealtime();
+    const { messages, setMessages, openTicket, isMessagesLoading } = useRealtime();
 
     const { onlineUsers, isTyping, sendTyping } = useConversationRealtime(
         user?.id ?? null,
@@ -53,10 +54,18 @@ export default function useMessages() {
         typingTimer.current = window.setTimeout(() => sendTyping(false), 1500);
     };
 
-
+    /**
+     * Reformat the message before sending it to the backend
+     * @returns 
+     */
     const handleSend = async () => {
         const content = draft.trim();
+
         if (!content || !ticketId || !user) return;
+
+        if (content.length > 500) {
+            return {status: "fail", errorMsg: `Message too long (${content.length} / 500)`, data: {}}
+        }
 
         sendTyping(false);
         setDraft("");
@@ -66,11 +75,16 @@ export default function useMessages() {
     const messageMutation = useMutation({
         mutationFn: () => handleSend(),
         onSuccess: (res) => {
-            if (!res || res.status === "fail") {
+            // terminate early if no content
+            if (!res) {
+                return;
+            } else if (res.status === "fail") {
                 showErrorToast(`Error, failed to send message: ${res?.errorMsg}`);
                 return;
             }
-            // invalidate cache query ticket to be able to reftech them after a creation
+            const newMessage = res.data as MessageRow
+            // add the message to the list at the end (avoid refetching all the content)
+            setMessages((prevMessages) => [...prevMessages, {...newMessage, sender: {username: profile.username}}])
         },
         onError: (error) => {
             showErrorToast(`Error, failed to send message: ${error.message}`);
@@ -83,6 +97,7 @@ export default function useMessages() {
         draft,
         counterpartOnline,
         isTyping,
+        isMessagesLoading,
         messageMutation,
         handleDraftChange,
         listRef,

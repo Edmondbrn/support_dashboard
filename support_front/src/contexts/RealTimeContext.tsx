@@ -1,5 +1,5 @@
 import type { MessageRow } from "@/apis/types";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { useAuth } from "./AuthContext";
 import { useLocation } from "react-router";
 import { appRoutes } from "@/config";
@@ -18,13 +18,14 @@ export interface ChatMessage extends MessageRow {
 
 
 interface RealtimeContextValue {
-    messages : ChatMessage[],
+    messages : ChatMessage[],    
     unreadCount : number,
     openTicketId : string | null,
     openTicket : (ticketId : string) => Promise<void>,
     closeTicket: () => void,
     resetUnread: () => void,
-    isMessagesLoading: boolean
+    isMessagesLoading: boolean,
+    setMessages: Dispatch<SetStateAction<ChatMessage[]>>
 }
 
 const RealtimeContext = createContext<RealtimeContextValue | undefined>(undefined);
@@ -51,7 +52,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     }, [openTicketId]);
 
     useEffect(() => {
-        onMessagesPageRef.current = location.pathname === appRoutes.MESSAGES || location.pathname === appRoutes.MESSAGES_TICKET;
+        onMessagesPageRef.current = location.pathname === appRoutes.MESSAGES_TICKET || location.pathname === appRoutes.MESSAGES_TICKET;
     }, [location.pathname]);
 
 
@@ -124,12 +125,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
     // reaching the messages page clears the badge
     useEffect(() => {
-        if (location.pathname === appRoutes.MESSAGES || location.pathname === appRoutes.MESSAGES_TICKET) setUnreadCount(0);
+        if (location.pathname === appRoutes.MESSAGES_TICKET || location.pathname === appRoutes.MESSAGES_TICKET) setUnreadCount(0);
     }, [location.pathname]);
 
     return (
         <RealtimeContext.Provider
-            value={{ messages, unreadCount, openTicketId, openTicket, closeTicket, resetUnread, isMessagesLoading }}
+            value={{ messages, setMessages, unreadCount, openTicketId, openTicket, closeTicket, resetUnread, isMessagesLoading }}
         >
             {children}
         </RealtimeContext.Provider>

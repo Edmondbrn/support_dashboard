@@ -78,13 +78,15 @@ export default function Messages() {
             {/* messages */}
             <div ref={listRef} className="flex flex-col overflow-y-auto px-10 py-10">
                 {messages.map((m) => (
-                    <MessageCard
-                        key={m.id}
-                        sentAt={formatDate(m.created_at)}
-                        senderName={m.sender?.username ?? "unknown"}
-                    >
-                        {m.content ?? ""}
-                    </MessageCard>
+                    <div className="pb-3">
+                        <MessageCard
+                            key={m.id}
+                            sentAt={formatDate(m.created_at)}
+                            senderName={m.sender?.username ?? "unknown"}
+                        >
+                            {m.content ?? ""}
+                        </MessageCard>
+                    </div>
                 ))}
             </div>
 

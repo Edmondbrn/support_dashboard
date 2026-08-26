@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { twJoin } from "tailwind-merge";
 import UserAvatar from "../shared/UserAvatar";
 import { getUserInitials } from "@/utils/userUtils";
+import { memo } from "react";
 
 
 
@@ -18,10 +19,8 @@ interface MessageCardProps {
  * @param props 
  * @returns 
  */
-export default function MessageCard(props : MessageCardProps) {
-
+const MessageCard = memo((props : MessageCardProps) => {
     const { profile } = useAuth();
-
     const initials = getUserInitials(profile);
     // current user's messages on the right, other ones on the left
     const msgPosition = profile?.username === props.senderName ? "items-end pl-5 md:pl-20" : "items-start pr-5 md:pr-20";
@@ -42,6 +41,6 @@ export default function MessageCard(props : MessageCardProps) {
             <time className="text-xs text-gray-400">{props.sentAt}</time>
         </div>
     )
+})
 
-
-}
+export default MessageCard;
