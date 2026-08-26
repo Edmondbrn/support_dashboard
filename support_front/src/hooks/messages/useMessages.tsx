@@ -7,6 +7,7 @@ import { useRealtime } from "@/contexts/RealTimeContext";
 import { sendMessage } from "@/apis/messages";
 import { useMutation } from "@tanstack/react-query";
 import type { MessageRow } from "@/apis/types";
+import { inProgressTicket } from "@/apis/public";
 
 
 
@@ -69,6 +70,9 @@ export default function useMessages() {
 
         sendTyping(false);
         setDraft("");
+        // if (messages.length === 0) {
+            await inProgressTicket(ticketId); // pass the ticket as "in_progress" when the first message is sent by the agent
+        // }
         return await sendMessage(ticketId, user.id, content);
     }
 

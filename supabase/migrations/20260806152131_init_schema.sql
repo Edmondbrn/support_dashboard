@@ -431,6 +431,58 @@ GRANT EXECUTE ON FUNCTION public.close_ticket(uuid) TO authenticated;
 
 
 
+CREATE OR REPLACE FUNCTION public.in_progress_ticket(
+  p_ticket_id uuid
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_user_role        text;
+  v_user_id          uuid;
+  v_is_claimed_agent boolean;
+BEGIN
+
+  v_user_id   := public.get_current_user();
+  v_user_role := public.get_role();
+
+  IF v_user_role = 'client' THEN
+    RAISE EXCEPTION 'Forbidden'
+      USING ERRCODE = '42501'; -- 403 Forbidden
+  END IF;
+
+  -- chekc if the current agent is the assigned one
+  v_is_claimed_agent := (v_user_role = 'admin') OR EXISTS (
+    SELECT 1 FROM public.tickets t
+    WHERE t.id = p_ticket_id AND t.agent_id = v_user_id
+  );
+
+  IF NOT v_is_claimed_agent THEN
+    RAISE EXCEPTION 'Forbidden'
+      USING ERRCODE = '42501'; -- 403 Forbidden
+  END IF;
+
+
+  UPDATE public.tickets
+  SET status = 'in_progress'::ticket_status, closed_by = v_user_id
+  WHERE id = p_ticket_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Ticket % not found', p_ticket_id
+      USING ERRCODE = 'P0002'; -- 404 Not Found
+  END IF;
+
+  RETURN TRUE;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.in_progress_ticket(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.in_progress_ticket(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.in_progress_ticket(uuid) TO authenticated;
+
+
 --------- Trigger functions --------------
 
 

@@ -33,6 +33,8 @@ export async function findMessagesForTicket(
 }
 
 
+
+
 /**
  * Create a new message inside a ticket (RLS handles sender identity)
  * @param ticketId 

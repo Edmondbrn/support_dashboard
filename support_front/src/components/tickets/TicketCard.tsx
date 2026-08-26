@@ -11,6 +11,7 @@ interface TicketCardProps {
     ticket: Ticket;
     showStatus?: boolean;
     showAgent?: boolean;
+    showClaim: boolean;
     onOpenConversation?: () => void;
     onClaimTicket? : () => void;
     isClaimTicketLoading? : boolean;
@@ -24,11 +25,14 @@ export default function TicketCard({
     ticket,
     showStatus = false,
     showAgent = false,
+    showClaim = true,
     onOpenConversation,
     onClaimTicket,
     isClaimTicketLoading,
     claimingTicketId
 }: TicketCardProps) {
+
+
     return (
         <Card
             tabIndex={0}
@@ -102,7 +106,7 @@ export default function TicketCard({
                                 </Btn>
                             </div>
                         )
-                        : (
+                        : showClaim && (
                             <div className="grid grid-cols-1 mt-2">
                                 <Btn
                                     version="primary"

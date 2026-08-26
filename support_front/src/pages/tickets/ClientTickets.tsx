@@ -54,6 +54,7 @@ export default function ClientTickets() {
                                     ticket={ticket}
                                     showStatus
                                     showAgent
+                                    showClaim={false}
                                     onOpenConversation={ 
                                         ticket.status === "open" 
                                             ? undefined // no message redirection button if ticket still unassigned
