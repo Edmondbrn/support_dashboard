@@ -21,9 +21,10 @@ interface RealtimeContextValue {
     messages : ChatMessage[],
     unreadCount : number,
     openTicketId : string | null,
-    openTicket : (ticketId : string) => void,
+    openTicket : (ticketId : string) => Promise<void>,
     closeTicket: () => void,
-    resetUnread: () => void
+    resetUnread: () => void,
+    isMessagesLoading: boolean
 }
 
 const RealtimeContext = createContext<RealtimeContextValue | undefined>(undefined);
@@ -37,6 +38,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [openTicketId, setOpenTicketId] = useState<string | null>(null);
+    const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
     // dedupe: your own INSERT comes back through the same feed
     const seenIdsRef = useRef<Set<number>>(new Set());
@@ -49,21 +51,29 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     }, [openTicketId]);
 
     useEffect(() => {
-        onMessagesPageRef.current = location.pathname === appRoutes.MESSAGES;
+        onMessagesPageRef.current = location.pathname === appRoutes.MESSAGES || location.pathname === appRoutes.MESSAGES_TICKET;
     }, [location.pathname]);
 
 
     const openTicket = useCallback(async (ticketId: string) => {
+        setIsMessagesLoading(true);
         setOpenTicketId(ticketId);
         seenIdsRef.current.clear();
 
-        const res = await findMessagesForTicket(ticketId);
-        if (res.status === "success") {
-            const rows = res.data as ChatMessage[];
-            rows.forEach((m) => seenIdsRef.current.add(m.id));
-            setMessages(rows);
-        } if (res.status === "fail") {
+        try {
+            const res = await findMessagesForTicket(ticketId);
+            if (res.status === "success") {
+                const rows = res.data as ChatMessage[];
+                rows.forEach((m) => seenIdsRef.current.add(m.id));
+                setMessages(rows);
+            } else {
+                setMessages([]);
+            }
+        } catch (error) {
+            console.error("Error loading messages:", error);
             setMessages([]);
+        } finally {
+            setIsMessagesLoading(false);
         }
     }, []);
 
@@ -114,12 +124,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
     // reaching the messages page clears the badge
     useEffect(() => {
-        if (location.pathname === appRoutes.MESSAGES) setUnreadCount(0);
+        if (location.pathname === appRoutes.MESSAGES || location.pathname === appRoutes.MESSAGES_TICKET) setUnreadCount(0);
     }, [location.pathname]);
 
     return (
         <RealtimeContext.Provider
-            value={{ messages, unreadCount, openTicketId, openTicket, closeTicket, resetUnread }}
+            value={{ messages, unreadCount, openTicketId, openTicket, closeTicket, resetUnread, isMessagesLoading }}
         >
             {children}
         </RealtimeContext.Provider>

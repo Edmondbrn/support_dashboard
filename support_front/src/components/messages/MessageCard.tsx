@@ -9,7 +9,8 @@ import { getUserInitials } from "@/utils/userUtils";
 interface MessageCardProps {
     children: string,
     sentAt: string,
-    senderName: string
+    senderName: string,
+    messageId?: string
 }
 
 /**

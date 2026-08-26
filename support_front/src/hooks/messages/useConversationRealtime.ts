@@ -21,26 +21,32 @@ export function useConversationRealtime(
     currentUsername?: string,
 ) {
 
-
     const [onlineUsers, setOnlineUsers] = useState<PresenceState[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const channelRef = useRef<RealtimeChannel | null>(null);
     const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     useEffect(() => {
-
         if (!ticketId || !currentUserId) return;
 
-        const channel = supabase.channel(`ticket:${ticketId}`);
+        let cancelled = false;
+        const topic = `ticket:${ticketId}`;
+        // manual cleanup if strict mode goes faster than effect cleanup
+        const existing = supabase.getChannels().find((c) => c.topic.replace("realtime:", "") === topic)
+        if (existing) {
+            supabase.removeChannel(existing);
+        }
+        
+        const channel = supabase.channel(topic);
         channelRef.current = channel;
 
         channel
             .on("presence", {"event": "sync"}, () => {
                 // get connected users data
-                const state = channel.presenceState<PresenceState>;
+                const state = channel.presenceState<PresenceState>();
                 const users = Object.values(state).map((p) => p[0]).filter(Boolean);
                 // check if other users are online
-                setOnlineUsers(users.filter((u) => u.user_id !== currentUserId));
+                setOnlineUsers(users.filter((u) => u.userId !== currentUserId));
             })
             .on("broadcast", {"event": "typing"}, ({payload}: {payload : TypingPayload}) => {
                 // do not process current user typing
@@ -54,6 +60,7 @@ export function useConversationRealtime(
                 }
             })
             .subscribe((status) => {
+                if (cancelled) return; // do not track if the component is unmounted
                 // send connected status to other connected users
                 if (status === "SUBSCRIBED") {
                     channel.track({ user_id: currentUserId, username: currentUsername ?? "" });
@@ -61,6 +68,7 @@ export function useConversationRealtime(
             });
 
         return () => {
+            cancelled = true
             window.clearTimeout(typingTimer.current);
             supabase.removeChannel(channel);
             channelRef.current = null;

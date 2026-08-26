@@ -6,7 +6,7 @@ import Signin from './pages/auth/signin';
 import Home from './pages/home/home';
 import Tickets from './pages/tickets/tickets';
 import CreateTicket from './pages/tickets/createTicket';
-import Messages from './pages/messages/messages';
+import Messages from './pages/messages/Messages';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import NavBar from './components/shared/navBar';
 import { useAuth } from './contexts/AuthContext';
