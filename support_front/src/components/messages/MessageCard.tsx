@@ -28,15 +28,16 @@ const MessageCard = memo((props : MessageCardProps) => {
 
     return (
         <div className={twJoin(["flex flex-col gap-1 text-justify", msgPosition])}>
-            <Card className="overflow-visible w-fit p-2 bg-white text-gray-700 text-sm" style={{borderRadius: "1em"}}>
-
+            <Card 
+                className="overflow-visible w-fit max-w-[50vw] md:max-w-xl p-2 bg-white text-gray-700 text-sm" 
+                style={{borderRadius: "1em"}}
+            >
                 <CardContent className="relative text-left">
                     <span className={twJoin(["absolute", badgePosition])}>
-                    <UserAvatar initials={initials} />
+                        <UserAvatar initials={initials} />
                     </span>
-                    <span>{props.children}</span>
+                    <span className="whitespace-normal wrap-break-word">{props.children}</span>
                 </CardContent>
-
             </Card>
             <time className="text-xs text-gray-400">{props.sentAt}</time>
         </div>
