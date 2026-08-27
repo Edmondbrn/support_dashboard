@@ -181,7 +181,7 @@ grant all on public.tickets to service_role;
 CREATE TABLE public.profiles (
   id         uuid                     DEFAULT gen_random_uuid() NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
-  username   text                     DEFAULT ''::text NOT NULL,
+  username   text UNIQUE              DEFAULT ''::text NOT NULL,
   role       roles                    DEFAULT 'client'::roles NOT NULL,
   CHECK (length(username) <= 50)
 );

@@ -39,3 +39,9 @@ export interface Ticket {
     created_at: string;
     closed_by: string | null;
 }
+
+
+export interface TicketUser {
+    agentName: string,
+    clientName: string
+}

@@ -15,9 +15,11 @@ export default function Messages() {
         counterpartOnline,
         isTyping,
         isMessagesLoading,
+        isTicketUserLoading,
         listRef,
         messages
     } = useMessages();
+
 
     // State: No ticket selected (base /messages route)
     if (!ticketId) {
@@ -59,22 +61,30 @@ export default function Messages() {
     return (
         <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col px-10 py-5">
             {/* header: conversation partner + online status */}
-            <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-                <span
-                    className={`size-2.5 rounded-full ${
-                        counterpartOnline ? "bg-emerald-400" : "bg-slate-500"
-                    }`}
-                />
-                <span className="text-sm text-white">
-                    {counterpartOnline ? "Online" : "Offline"}
-                </span>
-                {isTyping && (
-                    <span className="ml-auto text-sm italic text-orange-300">
-                        is typing…
-                    </span>
-                )}
-            </div>
-
+            {
+                isTicketUserLoading
+                 ? <Spinner className="size-8 text-white"/>
+                 : Object.entries(counterpartOnline).map(([username, isOnline]) => {
+                    return (
+                        <div key={`onlineStatus-${username}`} className="flex items-center gap-2 border-b border-white/10 pb-3">
+                            <span
+                                className={`size-2.5 rounded-full ${
+                                    isOnline ? "bg-emerald-400" : "bg-slate-500"
+                                }`}
+                            />
+                            <span className="text-sm text-white">
+                                {username}
+                            </span>
+                            {isTyping && (
+                                <span className="ml-auto text-sm italic text-orange-300">
+                                    is typing…
+                                </span>
+                            )}
+                        </div>
+                    )
+                })
+            }
+            
             {/* messages */}
             <div ref={listRef} className="flex flex-col overflow-y-auto px-10 py-10">
                 {messages.map((m) => (

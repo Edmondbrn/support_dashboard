@@ -1,94 +1,67 @@
 import type { MessageRow } from "@/apis/types";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
-import { useLocation } from "react-router";
+import { useMatch } from "react-router";
 import { appRoutes } from "@/config";
-import { findMessagesForTicket } from "@/apis/messages";
 import { supabase } from "@/lib/supabase";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { showInfoToast } from "@/utils/showToast";
-
-
-
-// add the sender username from the join
-export interface ChatMessage extends MessageRow {
-    sender: {username: string} | null;
-}
-
-
+import { useQueryClient } from "@tanstack/react-query";
+import { ticketMessagesKey, type ChatMessage } from "@/hooks/messages/useTicketMessages";
 
 interface RealtimeContextValue {
-    messages : ChatMessage[],    
-    unreadCount : number,
-    openTicketId : string | null,
-    openTicket : (ticketId : string) => Promise<void>,
-    closeTicket: () => void,
-    resetUnread: () => void,
-    isMessagesLoading: boolean,
-    setMessages: Dispatch<SetStateAction<ChatMessage[]>>
+    unreadCount: number;
+    openTicketId: string | null;
+    openTicket: (ticketId: string) => void;
+    closeTicket: () => void;
+    resetUnread: () => void;
 }
 
 const RealtimeContext = createContext<RealtimeContextValue | undefined>(undefined);
 
-
 export function RealtimeProvider({ children }: { children: ReactNode }) {
 
     const { user } = useAuth();
-    const location = useLocation();
+    const queryClient = useQueryClient();
 
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    // NOTE: the original code compared `location.pathname === appRoutes.MESSAGES_TICKET`
+    // directly, twice (a copy-paste no-op). MESSAGES_TICKET is a dynamic route
+    // ("/messages/:ticketId"), so that comparison could never actually match.
+    // useMatch does the real route matching instead.
+    const onMessagesPage = Boolean(useMatch(appRoutes.MESSAGES_TICKET));
+
     const [unreadCount, setUnreadCount] = useState(0);
     const [openTicketId, setOpenTicketId] = useState<string | null>(null);
-    const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
-    // dedupe: your own INSERT comes back through the same feed
+    // dedupe: our own INSERT (and any supabase redelivery) comes back through the same feed
     const seenIdsRef = useRef<Set<number>>(new Set());
-    // refs so the subscription callback always sees fresh values
+    // refs so the subscription callback always reads fresh values without re-subscribing
     const openTicketIdRef = useRef<string | null>(null);
     const onMessagesPageRef = useRef(false);
 
-    useEffect(() => { 
-        openTicketIdRef.current = openTicketId; 
+    useEffect(() => {
+        openTicketIdRef.current = openTicketId;
     }, [openTicketId]);
 
     useEffect(() => {
-        onMessagesPageRef.current = location.pathname === appRoutes.MESSAGES_TICKET || location.pathname === appRoutes.MESSAGES_TICKET;
-    }, [location.pathname]);
+        onMessagesPageRef.current = onMessagesPage;
+    }, [onMessagesPage]);
 
-
-    const openTicket = useCallback(async (ticketId: string) => {
-        setIsMessagesLoading(true);
+    const openTicket = useCallback((ticketId: string) => {
         setOpenTicketId(ticketId);
-        seenIdsRef.current.clear();
-
-        try {
-            const res = await findMessagesForTicket(ticketId);
-            if (res.status === "success") {
-                const rows = res.data as ChatMessage[];
-                rows.forEach((m) => seenIdsRef.current.add(m.id));
-                setMessages(rows);
-            } else {
-                setMessages([]);
-            }
-        } catch (error) {
-            console.error("Error loading messages:", error);
-            setMessages([]);
-        } finally {
-            setIsMessagesLoading(false);
-        }
     }, []);
-
 
     const closeTicket = useCallback(() => {
         setOpenTicketId(null);
-        setMessages([]);
     }, []);
 
+    const resetUnread = useCallback(() => setUnreadCount(0), []);
 
-    const resetUnread = useCallback(() => setUnreadCount(0), [])
-    ;
-
-    // global channel: postgres_changes on the messages table
+    // Single global channel: postgres_changes on the messages table.
+    // Instead of refetching a ticket's message list on every insert (expensive,
+    // and unnecessary), we patch the react-query cache for that ticket directly.
+    // If that ticket's query isn't currently mounted, there's nothing to patch —
+    // it'll simply be fetched fresh (including this row) next time it's opened.
     useEffect(() => {
         if (!user) return;
 
@@ -98,7 +71,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                 "postgres_changes",
                 { event: "INSERT", schema: "public", table: "messages" },
                 (payload: RealtimePostgresChangesPayload<MessageRow>) => {
-                    
+
                     const row = payload.new as ChatMessage;
                     if (seenIdsRef.current.has(row.id)) return;
                     seenIdsRef.current.add(row.id);
@@ -106,10 +79,16 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                     const isMine = row.sender_id === user.id;
                     const isCurrentTicket = openTicketIdRef.current === row.ticket_id;
 
-                    if (isCurrentTicket && onMessagesPageRef.current) {
-                        // feature 1: live append while on the messages page
-                        setMessages((prev) => [...prev, row]);
-                    } else if (!isMine) {
+                    queryClient.setQueryData<ChatMessage[]>(
+                        ticketMessagesKey(row.ticket_id),
+                        (old) => {
+                            if (!old) return old;
+                            if (old.some((m) => m.id === row.id)) return old;
+                            return [...old, row];
+                        }
+                    );
+
+                    if (!(isCurrentTicket && onMessagesPageRef.current) && !isMine) {
                         // feature 4: toast + badge while away
                         setUnreadCount((n) => n + 1);
                         if (!onMessagesPageRef.current) {
@@ -121,16 +100,16 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
-    }, [user]);
+    }, [user, queryClient]);
 
     // reaching the messages page clears the badge
     useEffect(() => {
-        if (location.pathname === appRoutes.MESSAGES_TICKET || location.pathname === appRoutes.MESSAGES_TICKET) setUnreadCount(0);
-    }, [location.pathname]);
+        if (onMessagesPage) setUnreadCount(0);
+    }, [onMessagesPage]);
 
     return (
         <RealtimeContext.Provider
-            value={{ messages, setMessages, unreadCount, openTicketId, openTicket, closeTicket, resetUnread, isMessagesLoading }}
+            value={{ unreadCount, openTicketId, openTicket, closeTicket, resetUnread }}
         >
             {children}
         </RealtimeContext.Provider>

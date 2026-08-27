@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 
 
@@ -25,6 +25,13 @@ export function useConversationRealtime(
     const [isTyping, setIsTyping] = useState(false);
     const channelRef = useRef<RealtimeChannel | null>(null);
     const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+    const onlineUsernames = useMemo(() => {
+        return new Set(onlineUsers
+                .map((onlineUser) => onlineUser.username)
+                .filter(Boolean)
+        )
+    }, [onlineUsers])
 
     useEffect(() => {
         if (!ticketId || !currentUserId) return;
@@ -86,6 +93,6 @@ export function useConversationRealtime(
     }, [currentUsername]);
 
 
-    return { onlineUsers, isTyping, sendTyping };
+    return { onlineUsers, onlineUsernames, isTyping, sendTyping };
 
 }
