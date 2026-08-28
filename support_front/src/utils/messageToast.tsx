@@ -4,6 +4,7 @@ import UserAvatar from "@/components/shared/UserAvatar";
 import { Btn } from "@/components/shared/button";
 import { getUserInitials } from "@/utils/userUtils";
 import type { Profile } from "@/apis/types";
+import { X } from "lucide-react";
 
 interface MessageToastContentProps {
     senderProfile: Profile | null;
@@ -18,6 +19,9 @@ function MessageToastContent({ senderProfile, content, onGo, toastId }: MessageT
             <CardHeader className="flex items-center gap-3">
                 <UserAvatar initials={getUserInitials(senderProfile)} />
                 <CardTitle className="truncate">{senderProfile?.username ?? "User"}</CardTitle>
+                <button className="ml-auto cursor-pointer" onClick={() => toast.dismiss(toastId)}>
+                    <X/>
+                </button>
             </CardHeader>
             <CardContent className="text-sm text-white">
                 <p className="line-clamp-2 wrap-break-words whitespace-normal">{content}</p>
