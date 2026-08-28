@@ -1,13 +1,14 @@
 import type { MessageRow } from "@/apis/types";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
-import { useMatch } from "react-router";
+import { useMatch, useNavigate } from "react-router";
 import { appRoutes } from "@/config";
 import { supabase } from "@/lib/supabase";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
-import { showInfoToast } from "@/utils/showToast";
+import { showMessageToast } from "@/utils/messageToast";
 import { useQueryClient } from "@tanstack/react-query";
 import { ticketMessagesKey, type ChatMessage } from "@/hooks/messages/useTicketMessages";
+import { findProfile } from "@/apis/public";
 
 interface RealtimeContextValue {
     unreadCount: number;
@@ -24,11 +25,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     const queryClient = useQueryClient();
 
-    // NOTE: the original code compared `location.pathname === appRoutes.MESSAGES_TICKET`
-    // directly, twice (a copy-paste no-op). MESSAGES_TICKET is a dynamic route
-    // ("/messages/:ticketId"), so that comparison could never actually match.
-    // useMatch does the real route matching instead.
     const onMessagesPage = Boolean(useMatch(appRoutes.MESSAGES_TICKET));
+    const navigate = useNavigate();
 
     const [unreadCount, setUnreadCount] = useState(0);
     const [openTicketId, setOpenTicketId] = useState<string | null>(null);
@@ -70,9 +68,10 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             .on(
                 "postgres_changes",
                 { event: "INSERT", schema: "public", table: "messages" },
-                (payload: RealtimePostgresChangesPayload<MessageRow>) => {
+                async (payload: RealtimePostgresChangesPayload<MessageRow>) => {
 
                     const row = payload.new as ChatMessage;
+                    console.log(row)
                     if (seenIdsRef.current.has(row.id)) return;
                     seenIdsRef.current.add(row.id);
 
@@ -88,11 +87,16 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                         }
                     );
 
+                    // fire notification if not on the message page and add badge count
                     if (!(isCurrentTicket && onMessagesPageRef.current) && !isMine) {
-                        // feature 4: toast + badge while away
                         setUnreadCount((n) => n + 1);
                         if (!onMessagesPageRef.current) {
-                            showInfoToast(`New message from ${row.sender?.username ?? "a user"}`);
+                            const senderProfile = (await findProfile(row.sender_id)).data;
+                            showMessageToast(
+                                senderProfile,
+                                row.content ?? "",
+                                () => navigate(appRoutes.MESSAGES_TICKET.replace(":ticketId", row.ticket_id))
+                            );
                         }
                     }
                 }
@@ -100,7 +104,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
-    }, [user, queryClient]);
+    }, [user, queryClient, navigate]);
 
     // reaching the messages page clears the badge
     useEffect(() => {
