@@ -1,6 +1,6 @@
 import MessageCard from "@/components/messages/MessageCard";
 import useMessages from "@/hooks/messages/useMessages";
-import { InboxIcon, MessageSquareIcon } from "lucide-react";
+import { InboxIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import MessageInput from "@/components/messages/MessageInput";
 import MessageList from "./MessageList";

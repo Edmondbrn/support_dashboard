@@ -9,7 +9,7 @@ export const conversationKey = (userId : string) => ["conversation-user", userId
 
 export function useConversations() {
 
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
 
     const conversationQuery = useQuery({
         queryKey: conversationKey(user?.id ?? "anon"),
@@ -26,6 +26,8 @@ export function useConversations() {
     })
 
     return {
+        currentUserId: user?.id,
+        currentUsername: profile?.username,
         conversationQuery
     }
 

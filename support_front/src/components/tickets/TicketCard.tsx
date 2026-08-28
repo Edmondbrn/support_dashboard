@@ -110,7 +110,7 @@ export default function TicketCard({
                             <div className="grid grid-cols-1 mt-2">
                                 <Btn
                                     version="primary"
-                                    onClick={() => onClaimTicket()}
+                                    onClick={() => onClaimTicket!()}
                                     isLoading={Boolean(isClaimTicketLoading) && claimingTicketId === ticket.id}
                                 >
                                     Claim
