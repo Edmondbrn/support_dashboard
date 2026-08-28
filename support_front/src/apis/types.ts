@@ -45,3 +45,17 @@ export interface TicketUser {
     agentName: string,
     clientName: string
 }
+
+export interface UserConversation {
+    id: string,
+    category: TicketCategory,
+    status: TicketStatus,
+    priority: TicketPriority,
+    description: string,
+    created_at: string,
+    other_user_id: string,
+    username: string,
+    last_message_content: string | null,
+    last_message_at: string | null,
+    sender_id: string | null
+}

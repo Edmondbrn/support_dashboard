@@ -14,6 +14,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { appRoutes } from './config';
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { RealtimeProvider } from './contexts/RealTimeContext';
+import MessageList from './pages/messages/MessageList';
 
 
 const RootLayout = () => {
@@ -22,7 +23,7 @@ const RootLayout = () => {
     <div className='min-h-screen text-white'>
       {user && <NavBar />}
       {/* Page body */}
-      <main className='bg-navy-gradient flex-1'>
+      <main className='bg-navy-gradient h-full'>
         <RealtimeProvider>
           <Outlet />
         </RealtimeProvider>
@@ -76,7 +77,15 @@ const router = createBrowserRouter([
             <Messages/>
           </ProtectedRoute>
         )
-      }
+      },
+      {
+        path: appRoutes.MESSAGES,
+        element: (
+          <ProtectedRoute>
+            <MessageList/>
+          </ProtectedRoute>
+        )
+      },
     ]
   }
 ])

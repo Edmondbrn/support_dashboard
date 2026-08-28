@@ -3,6 +3,24 @@ import type { ApiCallResponse } from "./types";
 
 
 /**
+ * API to fetch all the conversation between the current users and someone else for a ticket
+ * @returns 
+ */
+export async function findUserConversations(
+
+) : Promise<ApiCallResponse> {
+    const {data, error} = await supabase
+                                .rpc("find_conversation_for_user")
+    
+    if (error) {
+        console.error("[ERROR] Supabase error while fetching conversations", error.message);
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
+    }
+
+    return { status: "success", data };
+}
+
+/**
  * Fetch the whole history of a ticket
  * Number of message per ticket should not be huge, so no limit si fine
  * @param ticketId 

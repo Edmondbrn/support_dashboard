@@ -165,6 +165,22 @@ export type Database = {
         Returns: boolean
       }
       close_ticket: { Args: { p_ticket_id: string }; Returns: boolean }
+      find_conversation_for_user: {
+        Args: never
+        Returns: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          last_message_at: string
+          last_message_content: string
+          other_user_id: string
+          priority: string
+          sender_id: string
+          status: string
+          username: string
+        }[]
+      }
       get_current_user: { Args: never; Returns: string }
       get_role: { Args: never; Returns: string }
       in_progress_ticket: { Args: { p_ticket_id: string }; Returns: boolean }

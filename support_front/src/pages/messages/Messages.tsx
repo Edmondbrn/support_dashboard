@@ -3,6 +3,7 @@ import useMessages from "@/hooks/messages/useMessages";
 import { InboxIcon, MessageSquareIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import MessageInput from "@/components/messages/MessageInput";
+import MessageList from "./MessageList";
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString();
@@ -23,13 +24,7 @@ export default function Messages() {
 
     // State: No ticket selected (base /messages route)
     if (!ticketId) {
-        return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-navy-gradient">
-                <MessageSquareIcon className="mb-4 size-10 text-orange-300" />
-                <h1 className="text-lg font-medium text-white">Select a ticket to open the conversation</h1>
-                <p className="mt-2 text-sm text-slate-400">Choose a ticket from the Tickets page to view and reply</p>
-            </div>
-        );
+        return <MessageList />;
     }
 
     // State: Loading messages
