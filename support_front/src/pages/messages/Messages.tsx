@@ -98,6 +98,11 @@ export default function Messages() {
                         </MessageCard>
                     </div>
                 ))}
+                {isTyping && (
+                    <span className="ml-auto text-sm italic text-orange-300">
+                        is typing…
+                    </span>
+                )}
             </div>
 
             <MessageInput />
