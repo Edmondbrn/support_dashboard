@@ -7,10 +7,14 @@ import type { ApiCallResponse } from "./types";
  * @returns 
  */
 export async function findUserConversations(
-
+    last_loaded_ticket_id : string | undefined,
+    last_message_at: string | undefined
 ) : Promise<ApiCallResponse> {
     const {data, error} = await supabase
-                                .rpc("find_conversation_for_user")
+                                .rpc("find_conversation_for_user", {
+                                    "v_last_loaded_ticket_id": last_loaded_ticket_id,
+                                    "v_last_message_at": last_message_at
+                                })
     
     if (error) {
         console.error("[ERROR] Supabase error while fetching conversations", error.message);

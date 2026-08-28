@@ -5,7 +5,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
 
 
 -- Function to get all the conversations for a given user about a ticket
-CREATE OR REPLACE FUNCTION public.find_conversation_for_user()
+CREATE OR REPLACE FUNCTION public.find_conversation_for_user(
+    v_last_loaded_ticket_id uuid DEFAULT NULL,
+    v_last_message_at timestamptz DEFAULT NULL
+)
 RETURNS TABLE (
     id uuid,
     category public.ticket_category,
@@ -51,8 +54,11 @@ BEGIN
         FROM public.tickets AS t
         JOIN public.profiles AS p ON t.client_id = p.id
         LEFT JOIN last_messages lm ON lm.ticket_id = t.id
-        WHERE t.agent_id = v_user_id
-        ORDER BY COALESCE(lm.created_at, t.created_at) DESC;
+        WHERE t.agent_id = v_user_id AND 
+              (v_last_message_at IS NULL OR 
+               (COALESCE(lm.created_at, t.created_at), t.id) < (v_last_message_at, v_last_loaded_ticket_id))
+        ORDER BY COALESCE(lm.created_at, t.created_at) DESC, t.id DESC
+        LIMIT 10;
 
     ELSE
         RETURN QUERY
@@ -78,13 +84,16 @@ BEGIN
         FROM public.tickets AS t
         JOIN public.profiles AS p ON t.agent_id = p.id
         LEFT JOIN last_messages lm ON lm.ticket_id = t.id
-        WHERE t.client_id = v_user_id
-        ORDER BY COALESCE(lm.created_at, t.created_at) DESC;
+        WHERE t.client_id = v_user_id AND
+              (v_last_message_at IS NULL OR 
+               (COALESCE(lm.created_at, t.created_at), t.id) < (v_last_message_at, v_last_loaded_ticket_id))
+        ORDER BY COALESCE(lm.created_at, t.created_at) DESC, t.id DESC
+        LIMIT 10;
     END IF;
 END;
 $function$;
 
 
-REVOKE ALL ON FUNCTION public.find_conversation_for_user() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.find_conversation_for_user() FROM anon;
-GRANT EXECUTE ON FUNCTION public.find_conversation_for_user() TO authenticated;
+REVOKE ALL ON FUNCTION public.find_conversation_for_user(uuid, timestamptz) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.find_conversation_for_user(uuid, timestamptz) FROM anon;
+GRANT EXECUTE ON FUNCTION public.find_conversation_for_user(uuid, timestamptz) TO authenticated;
