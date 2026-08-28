@@ -17,12 +17,12 @@ export default function MessageInput() {
     } = useMessages();
 
     return (
-        <div className="flex shrink-0 items-center w-full gap-3 px-5 py-3 border border-gray-400 rounded-2xl">
+        <div className="flex items-center w-full gap-3 px-5 py-3 border border-gray-400 rounded-2xl">
             <button className="cursor-pointer">
                 <InboxIcon size={32} className="text-slate-400" />
             </button>
             <Input
-                className="border-white/30 grow text-md py-3"
+                className="border-white/30 w-full text-md py-3"
                 type="text"
                 placeholder="Type your message..."
                 value={draft}
