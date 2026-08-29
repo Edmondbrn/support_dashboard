@@ -88,7 +88,6 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                     const isMine = row.sender_id === user.id;
                     const isViewingTicket =
                         openTicketIdRef.current === row.ticket_id && onMessagesPageRef.current;
-                    console.log(isViewingTicket)
                     
                     // patch the message list
                     queryClient.setQueryData<ChatMessage[]>(

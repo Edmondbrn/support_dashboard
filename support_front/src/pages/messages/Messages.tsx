@@ -81,7 +81,10 @@ export default function Messages() {
             }
             
             {/* messages */}
-            <div ref={listRef} className="flex flex-col overflow-y-auto px-10 py-10">
+            <div ref={listRef} 
+                className="flex flex-col px-10 py-10 
+                        overflow-y-auto scrollbar-thin scrollbar-thumb-orange-300"
+            >
                 {messages.map((m) => (
                     <div className="pb-3">
                         <MessageCard
