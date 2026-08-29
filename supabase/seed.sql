@@ -357,13 +357,6 @@ SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 8, true);
 
 
 --
--- Name: messages_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
-SELECT pg_catalog.setval('"public"."messages_id_seq"', 1, false);
-
-
---
 -- Name: hooks_id_seq; Type: SEQUENCE SET; Schema: supabase_functions; Owner: supabase_functions_admin
 --
 

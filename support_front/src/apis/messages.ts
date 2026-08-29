@@ -159,3 +159,27 @@ export async function markTicketRead(
 
     return { status: "success" };
 }
+
+
+/**
+ * Upload a file for the given conversation in the file path 
+ * @param filePath 
+ * @param file 
+ * @returns 
+ */
+export async function uploadAttachment(
+    filePath: string,
+    file : File
+) : Promise<ApiCallResponse> {
+
+    const { error } = await supabase.storage
+                                    .from("message-attachments")
+                                    .upload(filePath, file);
+
+    if (error) {
+        console.error("[ERROR] Supabase error while uploading file to ticket bucket", error.message);
+        return { status: "fail", errorMsg: error.message, errorCode: error.statusCode };
+    }
+
+    return { status: "success" };
+}

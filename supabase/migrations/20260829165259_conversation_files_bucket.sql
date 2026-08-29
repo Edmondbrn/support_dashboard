@@ -1,0 +1,41 @@
+
+-- Create the bucket
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'message-attachments',
+  'message-attachments',
+  false,
+  5242880, -- 50 MB
+  array['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
+);
+
+
+
+CREATE POLICY "participants can read their discussion files"
+ON storage.objects
+FOR INSERT
+TO authenticated
+USING (
+  bucket_id = 'message-attachments'
+  AND EXISTS (
+    SELECT 1
+    FROM public.tickets t
+    WHERE t.id = (storage.foldername(name))[1]::uuid -- check if the file prefix is equals to the ticket ID
+      AND (t.client_id = (SELECT auth.uid()) OR t.agent_id = (SELECT auth.uid()))
+  )
+);
+
+
+CREATE POLICY "participants can upload to their discussion"
+ON storage.objects
+FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'message-attachments'
+  AND EXISTS (
+    SELECT 1
+    FROM public.tickets t
+    WHERE t.id = (storage.foldername(name))[1]::uuid -- check if the file prefix is equals to the ticket ID
+      AND (t.client_id = (SELECT auth.uid()) OR t.agent_id = (SELECT auth.uid()))
+  )
+);
