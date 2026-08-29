@@ -61,12 +61,12 @@ function ConversationCardImpl({
                         </span>
                         )}
                     </div>
-                        <div className="flex min-w-0 flex-col">
-                            <span className="truncate font-medium">{conversation.username}</span>
-                            <time className="text-xs text-gray-400">
-                            {timeStampToDate(conversation.created_at)}
-                            </time>
-                        </div>
+                    <div className="flex min-w-0 flex-col">
+                        <span className="truncate font-medium">{conversation.username}</span>
+                        <time className="text-xs text-gray-400">
+                        {timeStampToDate(conversation.created_at)}
+                        </time>
+                    </div>
                 </div>
 
                 <div className="flex flex-col md:flex-row md:justify-center gap-2">

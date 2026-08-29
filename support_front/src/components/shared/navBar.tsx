@@ -15,6 +15,7 @@ import {
 import { NavLink } from "react-router";
 import { getUserInitials } from "@/utils/userUtils";
 import UserAvatar from "./UserAvatar";
+import { useRealtime } from "@/contexts/RealTimeContext";
 
 type UserRole = Database["public"]["Enums"]["roles"];
 
@@ -47,6 +48,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
 
 export default function NavBar() {
     const { user, profile, role } = useAuth();
+    const { unreadCount } = useRealtime();
 
     // default to the client menu while loading or as fallback
     const menu = NAV_ITEMS[role ?? "client"];
@@ -87,7 +89,22 @@ export default function NavBar() {
                             }
                         >
                             <item.icon className="size-4" />
-                            <span className="hidden md:inline">{item.label}</span>
+                            {
+                                item.to === appRoutes.MESSAGES
+                                    // add read count for message menu
+                                    ? (
+                                        <div className="relative shrink-0">
+                                            <span className="hidden md:inline">{item.label}</span>
+                                            {/* undread count badge */}
+                                            {unreadCount > 0 && (
+                                            <span className="absolute -right-4 -top-2 flex size-5 items-center justify-center rounded-full bg-orange-500 text-[11px] font-semibold text-white ring-2 ring-black/40">
+                                                {unreadCount > 9 ? "9+" : unreadCount}
+                                            </span>
+                                            )}
+                                        </div>
+                                    )
+                                    : <span className="hidden md:inline">{item.label}</span>
+                            }
                         </NavLink>
                     ))}
                 </nav>

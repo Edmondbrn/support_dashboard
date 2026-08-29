@@ -29,6 +29,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const queryClient = useQueryClient();
 
     const onMessagesPage = Boolean(useMatch(appRoutes.MESSAGES_TICKET));
+    const onConversationPage = Boolean(useMatch(appRoutes.MESSAGES));
     const navigate = useNavigate();
 
     const [unreadCount, setUnreadCount] = useState(0);
@@ -40,10 +41,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     // refs so the subscription callback always reads fresh values without re-subscribing
     const openTicketIdRef = useRef<string | null>(null);
     const onMessagesPageRef = useRef(false);
+    const onConversationPageRef = useRef(false);
 
     useEffect(() => {
         openTicketIdRef.current = openTicketId;
     }, [openTicketId]);
+
+    useEffect(() => {
+        onConversationPageRef.current = onConversationPage;
+    }, [onConversationPage]);
 
     useEffect(() => {
         onMessagesPageRef.current = onMessagesPage;
@@ -168,8 +174,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
     // reaching the messages page clears the badge
     useEffect(() => {
-        if (onMessagesPage) setUnreadCount(0);
-    }, [onMessagesPage]);
+        if (onConversationPage) setUnreadCount(0);
+    }, [onConversationPage]);
 
     return (
         <RealtimeContext.Provider

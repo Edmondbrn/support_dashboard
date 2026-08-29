@@ -20,15 +20,17 @@ import MessageList from './pages/messages/MessageList';
 const RootLayout = () => {
   const { user } = useAuth();
   return (
-    <div className='min-h-screen text-white'>
-      {user && <NavBar />}
-      {/* Page body */}
-      <main className='bg-navy-gradient'>
-        <RealtimeProvider>
-          <Outlet />
-        </RealtimeProvider>
-      </main>
-    </div>
+    // Mandatory at Router level
+    <RealtimeProvider>
+      <div className='min-h-screen text-white'>
+        {user && <NavBar />}
+        {/* Page body */}
+        <main className='bg-navy-gradient'>
+            <Outlet />
+        </main>
+      </div>
+    </RealtimeProvider>
+
   );
 }
 
@@ -94,7 +96,7 @@ function App() {
   return (
     <AuthProvider>
       <TooltipProvider>
-        <RouterProvider router={router} />
+          <RouterProvider router={router} />
       </TooltipProvider>
     </AuthProvider>
   );
