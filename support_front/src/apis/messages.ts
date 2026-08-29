@@ -124,3 +124,38 @@ export async function sendMessage(
 
     return { status: "success", data: data };
 }
+
+
+/**
+ * Fetch unread data at app boots
+ * @returns 
+ */
+export async function fetchUnreadCounts(
+) : Promise<ApiCallResponse> {
+    const { data, error } = await supabase.rpc("get_unread_counts");
+
+    if (error) {
+        console.error("[ERROR] Supabase error while fetching unread counts", error.message);
+        return { status: "fail", errorMsg: error.message, errorCode: error.code };
+    }
+
+    return { status: "success", data: data };
+}
+
+
+/**
+ * Fetch unread data at app boots
+ * @returns 
+ */
+export async function markTicketRead(
+    ticketId : string
+) : Promise<ApiCallResponse> {
+    const { error } = await supabase.rpc("update_ticket_last_read", {"v_ticket_id": ticketId});
+
+    if (error) {
+        console.error("[ERROR] Supabase error while marking ticket as read", error.message);
+        return { status: "fail", errorMsg: error.message, errorCode: error.code };
+    }
+
+    return { status: "success" };
+}

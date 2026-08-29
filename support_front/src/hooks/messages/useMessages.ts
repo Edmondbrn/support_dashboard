@@ -60,7 +60,7 @@ export default function useMessages() {
     // ticket get appended silently instead of bumping the unread badge
     useEffect(() => {
         if (ticketId) openTicket(ticketId);
-        return () => closeTicket();
+        return () => closeTicket(ticketId);
     }, [ticketId, openTicket, closeTicket]);
 
 

@@ -200,8 +200,8 @@ CREATE TABLE public.messages (
   sender_id      uuid                     NOT NULL,
   content        text                     DEFAULT ''::text,
   attachment_url text                     DEFAULT NULL,
-  CHECK (length(content) <= 500),
-  CHECK (length(attachment_url) <= 500)
+  CHECK (length(trim(content)) <= 500 AND length(trim(content)) > 0),
+  CHECK (length(trim(attachment_url)) <= 500 AND length(trim(attachment_url)) > 0)
 );
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
@@ -237,7 +237,7 @@ ALTER TABLE public.tickets
 ALTER TABLE public.tickets
   ADD CONSTRAINT tickets_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-CREATE INDEX tickets_client_id_idx ON public.tickets (client_id);
+CREATE INDEX tickets_client_id_agent_id_idx ON public.tickets (client_id, agent_id);
 CREATE INDEX tickets_created_at_id_idx ON public.tickets (created_at, id);
 CREATE INDEX tickets_id_agent_id_idx ON public.tickets (agent_id, id);
 
@@ -533,9 +533,10 @@ AS $function$
 BEGIN
 
   -- force default fields values
-  UPDATE public.tickets AS t
-  SET created_at = NOW(), status = 'open'::ticket_status, agent_id = NULL, closed_by = NULL
-  WHERE t.id = NEW.id;
+  NEW.created_at := NOW()
+  NEW.status     := 'open'::ticket_status
+  NEW.agent_id   := NULL
+  NEW.closed_by  := NULL
 
   RETURN NEW;
   
@@ -544,10 +545,31 @@ $function$;
 
 
 CREATE TRIGGER set_ticket_default_fields_trigger 
-AFTER INSERT ON public.tickets 
+BEFORE INSERT ON public.tickets 
 FOR EACH ROW 
 WHEN (row_security_active('public.tickets')) -- do not apply for admin
 EXECUTE FUNCTION public.set_ticket_default_fields();
+
+
+
+-- Trigger function to force created_at to current server time
+CREATE OR REPLACE FUNCTION public.override_message_created_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $function$
+BEGIN
+  NEW.created_at := now();
+  RETURN NEW;
+END;
+$function$;
+
+-- Attach trigger to messages table
+CREATE TRIGGER enforce_message_created_at
+BEFORE INSERT ON public.messages
+FOR EACH ROW
+WHEN (row_security_active('public.tickets')) -- do not apply for admin
+EXECUTE FUNCTION public.override_message_created_at();
 ----------- RLS policies --------------
 
 -- No UPDATE RLS policies because they are too complex to handle cleanly (trigger function to avoid the update of fixed values), 
@@ -590,6 +612,7 @@ CREATE POLICY "Participants can insert messages" ON public.messages
   FOR INSERT
   TO authenticated
   WITH CHECK (
+    sender_id = (SELECT auth.uid()) AND
     (EXISTS (
       SELECT 1 FROM public.tickets t
       WHERE (

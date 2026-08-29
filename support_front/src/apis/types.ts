@@ -59,3 +59,8 @@ export interface UserConversation {
     last_message_at: string | null,
     sender_id: string | null
 }
+
+export interface TicketUnreadData {
+    ticket_id: string,
+    unread_count: number
+}

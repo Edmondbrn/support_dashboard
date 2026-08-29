@@ -97,6 +97,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_reads: {
+        Row: {
+          last_read_at: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_reads_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets: {
         Row: {
           agent_id: string | null
@@ -197,6 +230,13 @@ export type Database = {
       }
       get_current_user: { Args: never; Returns: string }
       get_role: { Args: never; Returns: string }
+      get_unread_counts: {
+        Args: never
+        Returns: {
+          ticket_id: string
+          unread_count: number
+        }[]
+      }
       in_progress_ticket: { Args: { p_ticket_id: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_agent: { Args: never; Returns: boolean }
@@ -210,6 +250,10 @@ export type Database = {
           p_profile_id: string
         }
         Returns: boolean
+      }
+      update_ticket_last_read: {
+        Args: { v_ticket_id: string }
+        Returns: undefined
       }
     }
     Enums: {

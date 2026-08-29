@@ -1,4 +1,4 @@
-import type { MessageRow, UserConversation } from "@/apis/types";
+import type { MessageRow, TicketUnreadData, UserConversation } from "@/apis/types";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { useMatch, useNavigate } from "react-router";
@@ -10,14 +10,14 @@ import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { ticketMessagesKey, type ChatMessage } from "@/hooks/messages/useTicketMessages";
 import { findProfile } from "@/apis/public";
 import { conversationKey } from "@/hooks/messages/useConversations";
-import { findConversationById } from "@/apis/messages";
+import { fetchUnreadCounts, findConversationById, markTicketRead } from "@/apis/messages";
 
 interface RealtimeContextValue {
     unreadCount: number;
     unreadByTicket: Record<string, number>;
     openTicketId: string | null;
     openTicket: (ticketId: string) => void;
-    closeTicket: () => void;
+    closeTicket: (ticketId? : string) => void;
     resetUnread: () => void;
 }
 
@@ -55,22 +55,54 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         onMessagesPageRef.current = onMessagesPage;
     }, [onMessagesPage]);
 
+        console.log(unreadByTicket)
+
     const openTicket = useCallback((ticketId: string) => {
         setOpenTicketId(ticketId);
         // opening a ticket == read new messages
+        const ticketUnreadCount = unreadByTicket[ticketId] ?? 0;
+        setUnreadCount((n) => {
+            console.log(ticketUnreadCount)
+            return n - ticketUnreadCount
+        })
         setUnreadByTicket((prev) => {
             if (!(ticketId in prev)) return prev;
             // extract ticketId entry and keep the rest in rest variable
             const { [ticketId]: _cleared, ...rest } = prev;
             return rest;
         });
-    }, []);
+        markTicketRead(ticketId); // fire and forget
+    }, [unreadByTicket]);
 
-    const closeTicket = useCallback(() => {
+
+    const closeTicket = useCallback((ticketId : string | undefined) => {
         setOpenTicketId(null);
+        if (ticketId) {
+            markTicketRead(ticketId); // update last_read_at when closing to avoid conflict if messages arrived by the realtime
+        }
     }, []);
 
     const resetUnread = useCallback(() => setUnreadCount(0), []);
+
+    // init unread counts at app boots for the current user
+    useEffect(() => {
+        if (!user) return;
+
+        fetchUnreadCounts().then((rows) => {
+            // silently break the logic
+            if (rows.status === "fail") {
+                return;
+            }
+            const byTicket: Record<string, number> = {};
+            let total = 0;
+            for (const row of rows.data as TicketUnreadData[]) {
+                byTicket[row.ticket_id] = row.unread_count;
+                total += row.unread_count;
+            }
+            setUnreadByTicket(byTicket);
+            setUnreadCount(total);
+        });
+    }, [user]);
 
     // Single global channel: postgres_changes on the messages table.
     // Instead of refetching a ticket's message list on every insert (expensive,
@@ -171,11 +203,6 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
         return () => { supabase.removeChannel(channel); };
     }, [user, queryClient, navigate]);
-
-    // reaching the messages page clears the badge
-    useEffect(() => {
-        if (onConversationPage) setUnreadCount(0);
-    }, [onConversationPage]);
 
     return (
         <RealtimeContext.Provider
