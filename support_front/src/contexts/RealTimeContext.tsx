@@ -55,14 +55,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         onMessagesPageRef.current = onMessagesPage;
     }, [onMessagesPage]);
 
-        console.log(unreadByTicket)
 
     const openTicket = useCallback((ticketId: string) => {
         setOpenTicketId(ticketId);
         // opening a ticket == read new messages
         const ticketUnreadCount = unreadByTicket[ticketId] ?? 0;
         setUnreadCount((n) => {
-            console.log(ticketUnreadCount)
             return n - ticketUnreadCount
         })
         setUnreadByTicket((prev) => {

@@ -183,3 +183,26 @@ export async function uploadAttachment(
 
     return { status: "success" };
 }
+
+
+/**
+ * Get downaload signed URLs to display attachment
+ * @param filePath 
+ * @param file 
+ * @returns 
+ */
+export async function getAttachmentSignedUrls(
+    filePaths: string[],
+) : Promise<ApiCallResponse> {
+
+    const { data, error } = await supabase.storage
+                                    .from("message-attachments")
+                                    .createSignedUrls(filePaths, 300); // expires after 5 minutes
+
+    if (error) {
+        console.error("[ERROR] Supabase error while downloading files from ticket bucket", error.message);
+        return { status: "fail", errorMsg: error.message, errorCode: error.statusCode };
+    }
+
+    return { status: "success", data: data };
+}
