@@ -20,8 +20,24 @@ export async function findUserConversations(
         console.error("[ERROR] Supabase error while fetching conversations", error.message);
         return {status: "fail", errorMsg: error.message, errorCode: error.code};
     }
-
     return { status: "success", data };
+}
+
+/**
+ * Find conversation data to load the card in conversation list
+ * @param ticketId 
+ * @returns 
+ */
+export async function findConversationById(ticketId: string) {
+  const { data, error } = await supabase
+    .rpc("find_conversation_by_id", { v_ticket_id: ticketId })
+    .maybeSingle();
+
+  if (error) {
+    console.error("[ERROR] Supabase error while fetching the conversation", error.message);
+    return { status: "error", errorMsg: error.message };
+  }
+  return { status: "success", data };
 }
 
 /**

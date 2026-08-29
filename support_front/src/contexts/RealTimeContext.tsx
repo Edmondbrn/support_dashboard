@@ -1,4 +1,4 @@
-import type { MessageRow } from "@/apis/types";
+import type { MessageRow, UserConversation } from "@/apis/types";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { useMatch, useNavigate } from "react-router";
@@ -6,12 +6,15 @@ import { appRoutes } from "@/config";
 import { supabase } from "@/lib/supabase";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { showMessageToast } from "@/utils/messageToast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { ticketMessagesKey, type ChatMessage } from "@/hooks/messages/useTicketMessages";
 import { findProfile } from "@/apis/public";
+import { conversationKey } from "@/hooks/messages/useConversations";
+import { findConversationById } from "@/apis/messages";
 
 interface RealtimeContextValue {
     unreadCount: number;
+    unreadByTicket: Record<string, number>;
     openTicketId: string | null;
     openTicket: (ticketId: string) => void;
     closeTicket: () => void;
@@ -29,6 +32,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const navigate = useNavigate();
 
     const [unreadCount, setUnreadCount] = useState(0);
+    const [unreadByTicket, setUnreadByTicket] = useState<Record<string, number>>({});
     const [openTicketId, setOpenTicketId] = useState<string | null>(null);
 
     // dedupe: our own INSERT (and any supabase redelivery) comes back through the same feed
@@ -47,6 +51,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
     const openTicket = useCallback((ticketId: string) => {
         setOpenTicketId(ticketId);
+        // opening a ticket == read new messages
+        setUnreadByTicket((prev) => {
+            if (!(ticketId in prev)) return prev;
+            // extract ticketId entry and keep the rest in rest variable
+            const { [ticketId]: _cleared, ...rest } = prev;
+            return rest;
+        });
     }, []);
 
     const closeTicket = useCallback(() => {
@@ -58,7 +69,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     // Single global channel: postgres_changes on the messages table.
     // Instead of refetching a ticket's message list on every insert (expensive,
     // and unnecessary), we patch the react-query cache for that ticket directly.
-    // If that ticket's query isn't currently mounted, there's nothing to patch —
+    // If that ticket's query isn't currently mounted, there's nothing to patch
     // it'll simply be fetched fresh (including this row) next time it's opened.
     useEffect(() => {
         if (!user) return;
@@ -71,33 +82,83 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                 async (payload: RealtimePostgresChangesPayload<MessageRow>) => {
 
                     const row = payload.new as ChatMessage;
-                    console.log(row)
                     if (seenIdsRef.current.has(row.id)) return;
-                    seenIdsRef.current.add(row.id);
+                    seenIdsRef.current.add(row.id); // ignore duplicated postgres signals
 
                     const isMine = row.sender_id === user.id;
-                    const isCurrentTicket = openTicketIdRef.current === row.ticket_id;
-
+                    const isViewingTicket =
+                        openTicketIdRef.current === row.ticket_id && onMessagesPageRef.current;
+                    console.log(isViewingTicket)
+                    
+                    // patch the message list
                     queryClient.setQueryData<ChatMessage[]>(
                         ticketMessagesKey(row.ticket_id),
                         (old) => {
                             if (!old) return old;
                             if (old.some((m) => m.id === row.id)) return old;
-                            return [...old, row];
+                            return [...old, row]; // add the new message to the list
                         }
                     );
 
-                    // fire notification if not on the message page and add badge count
-                    if (!(isCurrentTicket && onMessagesPageRef.current) && !isMine) {
-                        setUnreadCount((n) => n + 1);
-                        if (!onMessagesPageRef.current) {
-                            const senderProfile = (await findProfile(row.sender_id)).data;
-                            showMessageToast(
-                                senderProfile,
-                                row.content ?? "",
-                                () => navigate(appRoutes.MESSAGES_TICKET.replace(":ticketId", row.ticket_id))
-                            );
+                    // patch the conversation list
+                    const listKey = conversationKey(user.id);
+                    const cached = queryClient.getQueryData<InfiniteData<UserConversation[]>>(listKey);
+
+                    if (cached) {
+                        // extract ticket ids from all the loaded pages (list of pages containing list of ids)
+                        const loadedIds = new Set(cached.pages.flat().map((c) => c.id));
+
+                        // already loaded --> refresh preview + bump to top
+                        if (loadedIds.has(row.ticket_id)) {
+                            queryClient.setQueryData<InfiniteData<UserConversation[]>>(listKey, (old) => {
+                                if (!old) return old;
+                                const flat = old.pages.flat();
+                                const existing = flat.find((c) => c.id === row.ticket_id);
+                                if (!existing) return old; // safe guard, should be included if the set returns true
+
+                                const updated: UserConversation = {
+                                    ...existing,
+                                    last_message_content: row.content,
+                                    last_message_at: row.created_at,
+                                };
+                                // remove the conversation from pages
+                                const pages = old.pages.map((page) =>
+                                    page.filter((c) => c.id !== row.ticket_id)
+                                );
+                                // add it to the top
+                                pages[0] = [updated, ...pages[0]];
+                                return { ...old, pages };
+                            });
+                        } else {
+                            // not loaded yet --> fetch its summary, then insert once resolved
+                            const res = await findConversationById(row.ticket_id);
+                            if (res.status === "success" && res.data) {
+                                queryClient.setQueryData<InfiniteData<UserConversation[]>>(listKey, (old) => {
+                                    if (!old) return old;
+                                    // inner set to avoid race condition if 2 messages are sent simultanously to avoid adding twice the conversation
+                                    const alreadyThere = new Set(old.pages.flat().map((c) => c.id));
+                                    if (alreadyThere.has(row.ticket_id)) return old; // deduped
+                                    const pages = [...old.pages];
+                                    pages[0] = [res.data as UserConversation, ...pages[0]];
+                                    return { ...old, pages };
+                                });
+                            }
                         }
+                    }
+
+                    // fire notification if not on the message page and add badge count
+                    if (!isViewingTicket && !isMine) {
+                        setUnreadCount((n) => n + 1);
+                        setUnreadByTicket((prev) => ({
+                            ...prev,
+                            [row.ticket_id]: (prev[row.ticket_id] ?? 0) + 1,
+                        }));
+                        const senderProfile = (await findProfile(row.sender_id)).data;
+                        showMessageToast(
+                            senderProfile,
+                            row.content ?? "",
+                            () => navigate(appRoutes.MESSAGES_TICKET.replace(":ticketId", row.ticket_id))
+                        );
                     }
                 }
             )
@@ -113,7 +174,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
     return (
         <RealtimeContext.Provider
-            value={{ unreadCount, openTicketId, openTicket, closeTicket, resetUnread }}
+            value={{ unreadCount, unreadByTicket, openTicketId, openTicket, closeTicket, resetUnread }}
         >
             {children}
         </RealtimeContext.Provider>

@@ -62,7 +62,7 @@ export function showMessageToast(senderProfile: Profile | null, content: string,
         ),
         {
             position: "bottom-right",
-            duration: 50000,
+            duration: 5000,
             style: {
                 backgroundColor: "transparent",
                 border: "none",

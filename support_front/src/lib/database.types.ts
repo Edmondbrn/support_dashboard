@@ -165,6 +165,21 @@ export type Database = {
         Returns: boolean
       }
       close_ticket: { Args: { p_ticket_id: string }; Returns: boolean }
+      find_conversation_by_id: {
+        Args: { v_ticket_id: string }
+        Returns: {
+          category: Database["public"]["Enums"]["ticket_category"]
+          created_at: string
+          description: string
+          id: string
+          last_message_at: string
+          last_message_content: string
+          other_user_id: string
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          status: Database["public"]["Enums"]["ticket_status"]
+          username: string
+        }[]
+      }
       find_conversation_for_user: {
         Args: { v_last_loaded_ticket_id?: string; v_last_message_at?: string }
         Returns: {

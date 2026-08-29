@@ -22,12 +22,13 @@ interface NavItem {
     label: string;
     to: string;
     icon: LucideIcon;
+    end?: boolean;
 }
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     client: [
         { label: "Dashboard", to: appRoutes.HOME, icon: LayoutDashboard },
-        { label: "Tickets", to: appRoutes.TICKETS, icon: Ticket },
+        { label: "Tickets", to: appRoutes.TICKETS, icon: Ticket, end: true },
         { label: "Create ticket", to: appRoutes.TICKET_CREATE, icon: TicketPlus },
         { label: "Messages", to: appRoutes.MESSAGES, icon: MessageSquare }
     ],
@@ -75,6 +76,7 @@ export default function NavBar() {
                         <NavLink
                             key={item.to}
                             to={item.to}
+                            end={item.end}
                             className={({ isActive }) =>
                                 cn(
                                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
