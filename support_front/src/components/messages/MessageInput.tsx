@@ -32,11 +32,11 @@ export default function MessageInput() {
 
         if (previewUrl) {
             return (
-                <div className="w-full md:w-1/4 h-32 flex flex-col items-center bg-white/20 rounded-xl">
+                <div className="w-full md:w-1/2 h-64 flex flex-col items-center rounded-xl">
                     <button className="ml-auto cursor-pointer" onClick={() => handleFileSelection(null)}>
                         <X/>
                     </button>
-                    <img className="object-cover w-full h-full" src={previewUrl} alt="Attached_image"></img>
+                    <img className="object-contain w-full h-full" src={previewUrl} alt="Attached_image"></img>
                 </div>
             );
         }
