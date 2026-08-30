@@ -3,11 +3,13 @@ import type { SignedUrl } from "@/apis/types";
 import { Spinner } from "@/components/ui/spinner";
 import { useQuery } from "@tanstack/react-query";
 import { DownloadIcon, FileIcon } from "lucide-react";
+import { twJoin } from "tailwind-merge";
 
 interface MessageAttachmentProps {
     path: string,
     mimeType: string,
-    name: string
+    name: string,
+    maxHeight?: "max-h-64" | "max-h-32" | "max-h-16"
 }
 
 /**
@@ -29,7 +31,7 @@ export default function MessageAttachment(props : MessageAttachmentProps) {
     });
 
     if (isLoading) return <Spinner fontSize={20} />;
-    if (isError || !data) return <button onClick={() => refetch()}>Reload</button>;
+    if (isError || !data) return <button className="text-gray-100" onClick={() => refetch()}>Reload</button>;
 
     // Images
     if (props.mimeType.startsWith("image/")) {
@@ -37,7 +39,7 @@ export default function MessageAttachment(props : MessageAttachmentProps) {
         <img
             src={data}
             alt={props.name}
-            className="max-h-64 object-contain rounded-lg cursor-pointer"
+            className={twJoin(["object-contain rounded-lg cursor-pointer", props.maxHeight ?? "max-h-62"])}
             onError={() => refetch()} // reload signed URLs if expired
         />
         );

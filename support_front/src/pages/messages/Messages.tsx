@@ -95,7 +95,6 @@ export default function Messages() {
                             attachmentMimeType={m.attachment_mime_type}
                             attachmentPath={m.attachment_url}
                             attachmentName={m.attachment_name}
-                            attachmentSize={m.attachment_size}
                         />
                     </div>
                 ))}

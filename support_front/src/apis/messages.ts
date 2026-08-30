@@ -213,6 +213,20 @@ export async function uploadAttachment(
 
 
 /**
+ * Remove an uploaded file from the storage bucket if message insertion fails
+ * @param filePath 
+ */
+export async function deleteAttachment(filePath: string): Promise<void> {
+    const { error } = await supabase.storage
+        .from("message-attachments")
+        .remove([filePath]);
+
+    if (error) {
+        console.error("[ERROR] Failed to clean up orphaned attachment:", error.message);
+    }
+}
+
+/**
  * Get downaload signed URLs to display attachment
  * @param filePath 
  * @param file 
