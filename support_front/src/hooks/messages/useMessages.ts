@@ -134,7 +134,7 @@ export default function useMessages() {
         const content = draft.trim();
         const file = selectedFile;
 
-        if (!content || !ticketId || !user) return;
+        if ((!content && !file) || !ticketId || !user) return;
         if (content.length > 500) {
             return { status: "fail" as const, errorMsg: `Message too long (${content.length} / 500)`, data: {} };
         }

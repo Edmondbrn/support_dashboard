@@ -17,6 +17,7 @@ interface MessageAttachmentProps {
  */
 export default function MessageAttachment(props : MessageAttachmentProps) {
 
+    // single downalod for now, can be batched using the same function if performances drop
     const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ["attachment-signed-url", props.path],
         queryFn: async () => {

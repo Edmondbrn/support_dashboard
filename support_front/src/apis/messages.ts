@@ -112,14 +112,19 @@ export async function findTicketUsers(
 export async function sendMessage(
     ticketId : string, 
     senderId : string, 
-    content : string,
+    content? : string,
     attachment? : AttachmentMeta
 ) : Promise<ApiCallResponse> {
 
     let values = {
         ticket_id: ticketId, 
         sender_id: senderId, 
-        content: content,
+    }
+    if (content) {
+        values = {
+            ...values,
+            ...{content: content}
+        }
     }
     // add attachment metadat if any
     if (attachment) {
