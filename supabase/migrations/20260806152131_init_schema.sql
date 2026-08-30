@@ -39,6 +39,16 @@ CREATE TYPE public.ticket_category AS ENUM (
 
 COMMENT ON TYPE public.ticket_category IS 'Category of a ticket';
 
+
+CREATE TYPE public.mime_type AS ENUM (
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'application/pdf'
+);
+
+COMMENT ON TYPE public.mime_type IS 'Authorized MIME type';
+
 -- Utility function for RLS
 
 
@@ -194,12 +204,15 @@ grant select, insert, delete on public.profiles to authenticated;
 grant all on public.profiles to service_role;
 
 CREATE TABLE public.messages (
-  id             uuid                     DEFAULT gen_random_uuid() NOT NULL,
-  created_at     timestamp with time zone DEFAULT now() NOT NULL,
-  ticket_id      uuid                     NOT NULL,
-  sender_id      uuid                     NOT NULL,
-  content        text                     DEFAULT ''::text,
-  attachment_url text                     DEFAULT NULL,
+  id                   uuid                     DEFAULT gen_random_uuid() NOT NULL,
+  created_at           timestamp with time zone DEFAULT now() NOT NULL,
+  ticket_id            uuid                     NOT NULL,
+  sender_id            uuid                     NOT NULL,
+  content              text                     NOT NULL,
+  attachment_url       text                     DEFAULT NULL,
+  attachment_mime_type mime_type                DEFAULT NULL::mime_type,
+  attachment_name      text                     DEFAULT NULL,
+  attachment_size      bigint                   DEFAULT NULL,
   CHECK (length(trim(content)) <= 500 AND length(trim(content)) > 0),
   CHECK (length(trim(attachment_url)) <= 500 AND length(trim(attachment_url)) > 0)
 );
@@ -484,8 +497,6 @@ GRANT EXECUTE ON FUNCTION public.in_progress_ticket(uuid) TO authenticated;
 
 
 --------- Trigger functions --------------
-
-
 
 CREATE FUNCTION public.create_profile()
 RETURNS TRIGGER

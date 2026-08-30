@@ -5,7 +5,7 @@ VALUES (
   'message-attachments',
   'message-attachments',
   false,
-  5242880, -- 50 MB
+  5242880, -- 5 MB
   array['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
 );
 
@@ -15,7 +15,7 @@ CREATE POLICY "participants can read their discussion files"
 ON storage.objects
 FOR INSERT
 TO authenticated
-USING (
+WITH CHECK (
   bucket_id = 'message-attachments'
   AND EXISTS (
     SELECT 1

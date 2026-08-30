@@ -14,8 +14,16 @@ export type UserRole = Database["public"]["Enums"]["roles"];
 export type TicketPriority = Database["public"]["Enums"]["ticket_priority"];
 export type TicketStatus = Database["public"]["Enums"]["ticket_status"];
 export type TicketCategory = Database["public"]["Enums"]["ticket_category"];
+export type MimeType = Database["public"]["Enums"]["mime_type"];
 
 export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+
+export interface AttachmentMeta {
+    attachment_path: string,
+    attachment_mime_type: string,
+    attachment_name: string,
+    attachment_size: number,
+}
 
 export interface Profile {
     id: string;

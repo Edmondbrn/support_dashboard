@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { ApiCallResponse } from "./types";
+import type { ApiCallResponse, AttachmentMeta } from "./types";
 
 
 /**
@@ -57,7 +57,11 @@ export async function findMessagesForTicket(
                                     content,
                                     created_at,
                                     sender_id,
-                                    sender:profiles!sender_id (username)
+                                    sender:profiles!sender_id (username),
+                                    attachment_url,
+                                    attachment_mime_type,
+                                    attachment_name,
+                                    attachment_size
                                 `)
                                 .eq("ticket_id", ticketId)
                                 .order("created_at", {ascending: true});
@@ -108,12 +112,30 @@ export async function findTicketUsers(
 export async function sendMessage(
     ticketId : string, 
     senderId : string, 
-    content : string
+    content : string,
+    attachment? : AttachmentMeta
 ) : Promise<ApiCallResponse> {
+
+    let values = {
+        ticket_id: ticketId, 
+        sender_id: senderId, 
+        content: content,
+    }
+    // add attachment metadat if any
+    if (attachment) {
+        values = {
+            ...values,
+            ...{
+                attachment_name: attachment.attachment_name,
+                attachment_size: attachment.attachment_size,
+                attachment_url: attachment.attachment_path,
+                attachment_mime_type: attachment.attachment_mime_type
+        }}
+    }
 
     const { data, error } = await supabase
         .from("messages")
-        .insert({ ticket_id: ticketId, sender_id: senderId, content })
+        .insert(values)
         .select()
         .single();
 

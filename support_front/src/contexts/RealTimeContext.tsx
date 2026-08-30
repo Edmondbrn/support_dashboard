@@ -37,7 +37,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const [openTicketId, setOpenTicketId] = useState<string | null>(null);
 
     // dedupe: our own INSERT (and any supabase redelivery) comes back through the same feed
-    const seenIdsRef = useRef<Set<number>>(new Set());
+    const seenIdsRef = useRef<Set<string>>(new Set());
     // refs so the subscription callback always reads fresh values without re-subscribing
     const openTicketIdRef = useRef<string | null>(null);
     const onMessagesPageRef = useRef(false);

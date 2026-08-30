@@ -36,26 +36,35 @@ export type Database = {
     Tables: {
       messages: {
         Row: {
+          attachment_mime_type: Database["public"]["Enums"]["mime_type"] | null
+          attachment_name: string | null
+          attachment_size: number | null
           attachment_url: string | null
-          content: string | null
+          content: string
           created_at: string
-          id: number
+          id: string
           sender_id: string
           ticket_id: string
         }
         Insert: {
+          attachment_mime_type?: Database["public"]["Enums"]["mime_type"] | null
+          attachment_name?: string | null
+          attachment_size?: number | null
           attachment_url?: string | null
-          content?: string | null
+          content: string
           created_at?: string
-          id?: number
+          id?: string
           sender_id: string
           ticket_id: string
         }
         Update: {
+          attachment_mime_type?: Database["public"]["Enums"]["mime_type"] | null
+          attachment_name?: string | null
+          attachment_size?: number | null
           attachment_url?: string | null
-          content?: string | null
+          content?: string
           created_at?: string
-          id?: number
+          id?: string
           sender_id?: string
           ticket_id?: string
         }
@@ -257,6 +266,7 @@ export type Database = {
       }
     }
     Enums: {
+      mime_type: "image/png" | "image/jpeg" | "image/jpg" | "application/pdf"
       roles: "admin" | "client" | "agent"
       ticket_category: "software" | "hardware" | "delivery" | "payment"
       ticket_priority: "low" | "medium" | "high"
@@ -391,6 +401,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      mime_type: ["image/png", "image/jpeg", "image/jpg", "application/pdf"],
       roles: ["admin", "client", "agent"],
       ticket_category: ["software", "hardware", "delivery", "payment"],
       ticket_priority: ["low", "medium", "high"],

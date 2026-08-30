@@ -1,15 +1,21 @@
 import { useParams } from "react-router";
 import { useConversationRealtime } from "./useConversationRealtime";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { showErrorToast } from "@/utils/showToast";
+import { showErrorToast, showWarningToast } from "@/utils/showToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtime } from "@/contexts/RealTimeContext";
-import { sendMessage } from "@/apis/messages";
+import { sendMessage, uploadAttachment } from "@/apis/messages";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { MessageRow } from "@/apis/types";
+import type { AttachmentMeta, MessageRow } from "@/apis/types";
 import { inProgressTicket } from "@/apis/public";
 import { ticketMessagesKey, useTicketMessagesQuery, useTickeUsersQuery, type ChatMessage } from "./useTicketMessages";
+import { getFilePath } from "@/utils/utils";
 
+const AUTHORIZED_MIME_TYPES : Set<string> = new Set([
+    "application/pdf", "image/jpeg", "image/png", "image/jpg"
+]);
+
+const FILE_MAX_SIZE = 5_242_880 // 5 MB
 
 /**
  * Custom hook to handle message
@@ -25,6 +31,7 @@ export default function useMessages() {
     const queryClient = useQueryClient();
 
     const [draft, setDraft] = useState("");
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const listRef = useRef<HTMLDivElement>(null);
     const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -82,25 +89,83 @@ export default function useMessages() {
         typingTimer.current = window.setTimeout(() => sendTyping(false), 1500);
     };
 
+
+    /**
+     * Check file MIME type before setting the state
+     * @param file 
+     * @returns 
+     */
+    const handleFileSelection = (file : File | null) => {
+        if (!file) {
+            setSelectedFile(null);
+        } else if (!AUTHORIZED_MIME_TYPES.has(file.type)) {
+            showWarningToast("Unauthorized file type.");
+            return;
+        } else if (file.size > FILE_MAX_SIZE) {
+            showWarningToast("File too large.")
+        }
+        setSelectedFile(file);
+    }
+
+    // enable preview for image, just icon for other types
+    const previewUrl = useMemo(() => {
+        if (!selectedFile || !selectedFile.type.startsWith("image/")) {
+            return null;
+        }
+        return URL.createObjectURL(selectedFile);
+    }, [selectedFile])
+
+    // clear memory when file is cleared
+    useEffect(() => {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl)
+        }
+    }, [previewUrl]);
+
     /**
      * Reformat the message before sending it to the backend
+     * TODO betetr handle transition rollback if upload and message sending failed
      * @returns
      */
     const handleSend = async () => {
+        if (!user) {return;}
         const content = draft.trim();
+        const file = selectedFile;
 
         if (!content || !ticketId || !user) return;
-
         if (content.length > 500) {
             return { status: "fail" as const, errorMsg: `Message too long (${content.length} / 500)`, data: {} };
         }
 
         sendTyping(false);
         setDraft("");
-        if (messages.length === 0) {
-            await inProgressTicket(ticketId); // pass the ticket as "in_progress" when the first message is sent by the agent
+        setSelectedFile(null); // optimisitic reset
+
+        if (messages.length === 0) await inProgressTicket(ticketId);
+
+        let attachment: AttachmentMeta | undefined;
+        if (file) {
+            const filePath = getFilePath(ticketId, file.name);
+            const uploadRes = await uploadAttachment(filePath, file); // upload attchment to the bucket
+            if (uploadRes.status === "success") {
+                attachment = {
+                    attachment_path: filePath,
+                    attachment_mime_type: file.type,
+                    attachment_name: file.name,
+                    attachment_size: file.size,
+                };
+                //send message
+                return await sendMessage(ticketId, user.id, content, attachment);
+            } else {
+                showErrorToast(`Could not send the message : ${uploadRes.errorMsg}`);
+                return;
+            }
         }
-        return await sendMessage(ticketId, user.id, content);
+
+        // send message
+        if (content) {
+            return await sendMessage(ticketId, user.id, content);
+        }
     };
 
     const messageMutation = useMutation({
@@ -144,6 +209,9 @@ export default function useMessages() {
         isMessagesLoading,
         messageMutation,
         handleDraftChange,
+        handleFileSelection,
+        selectedFile,
+        previewUrl,
         listRef,
         messages
     };

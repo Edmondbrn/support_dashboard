@@ -1,10 +1,10 @@
-import React, { type Dispatch, type RefObject } from "react";
+import React, { type RefObject } from "react";
 
 
 interface FileSelectorProps {
     fileInputRef: RefObject<HTMLInputElement | null>,
     selectedFile: File | null,
-    setSelectedFile: Dispatch<React.SetStateAction<File | null>>,
+    setSelectedFile: (file : File | null) => void,
 }
 
 export default function FileSelector(props : FileSelectorProps) {
