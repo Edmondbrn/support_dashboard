@@ -25,6 +25,13 @@ export interface AttachmentMeta {
     attachment_size: number,
 }
 
+export interface SignedUrl {
+    error: string | null;
+    path: string | null;
+    signedURL: string | null;
+    signedUrl: string | null;
+}
+
 export interface Profile {
     id: string;
     username: string;

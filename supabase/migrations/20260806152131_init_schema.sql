@@ -208,7 +208,7 @@ CREATE TABLE public.messages (
   created_at           timestamp with time zone DEFAULT now() NOT NULL,
   ticket_id            uuid                     NOT NULL,
   sender_id            uuid                     NOT NULL,
-  content              text                     NOT NULL,
+  content              text                     DEFAULT NULL,
   attachment_url       text                     DEFAULT NULL,
   attachment_mime_type mime_type                DEFAULT NULL::mime_type,
   attachment_name      text                     DEFAULT NULL,
