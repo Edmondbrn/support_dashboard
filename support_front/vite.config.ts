@@ -22,7 +22,8 @@ export default defineConfig(({ command, mode }) => {
       include: ["tests/integration/**/*.test.ts"],
       testTimeout: 20_000,
       hookTimeout: 20_000,
-      silent: 'passed-only'
+      silent: 'passed-only',
+      fileParallelism: false, // avoid race condition for integration tests
     },
     server: {
       allowedHosts: [env.VITE_ALLOWED_HOSTS]
