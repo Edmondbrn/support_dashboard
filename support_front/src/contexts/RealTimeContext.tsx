@@ -192,7 +192,10 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                         showMessageToast(
                             senderProfile,
                             row.content ?? "",
-                            () => navigate(appRoutes.MESSAGES_TICKET.replace(":ticketId", row.ticket_id))
+                            () => navigate(appRoutes.MESSAGES_TICKET.replace(":ticketId", row.ticket_id)),
+                            row.attachment_mime_type, 
+                            row.attachment_url, 
+                            row.attachment_name
                         );
                     }
                 }

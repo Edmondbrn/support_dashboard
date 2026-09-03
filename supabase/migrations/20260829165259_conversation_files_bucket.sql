@@ -21,10 +21,26 @@ WITH CHECK (
     SELECT 1
     FROM public.tickets t
     WHERE t.id = (storage.foldername(name))[1]::uuid -- check if the file prefix is equals to the ticket ID
-      AND (t.client_id = (SELECT auth.uid()) OR t.agent_id = (SELECT auth.uid()))
+      AND (t.client_id = auth.uid() OR t.agent_id = auth.uid())
   )
 );
 
+CREATE POLICY "Participants can delete their discussion files"
+ON storage.objects
+FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'message-attachments'
+  AND EXISTS (
+    SELECT 1
+    FROM public.tickets t
+    WHERE t.id = ((storage.foldername(name))[1])::uuid
+      AND (
+        (NOT public.is_agent() AND t.client_id = auth.uid()) 
+        OR (public.is_agent() AND t.agent_id = auth.uid())
+      )
+  )
+);
 
 CREATE POLICY "participants can upload to their discussion"
 ON storage.objects
@@ -36,6 +52,6 @@ USING (
     SELECT 1
     FROM public.tickets t
     WHERE t.id = (storage.foldername(name))[1]::uuid -- check if the file prefix is equals to the ticket ID
-      AND (t.client_id = (SELECT auth.uid()) OR t.agent_id = (SELECT auth.uid()))
+      AND (t.client_id = auth.uid() OR t.agent_id = auth.uid())
   )
 );

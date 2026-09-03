@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { showErrorToast, showWarningToast } from "@/utils/showToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtime } from "@/contexts/RealTimeContext";
-import { sendMessage, uploadAttachment } from "@/apis/messages";
+import { deleteAttachment, sendMessage, uploadAttachment } from "@/apis/messages";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AttachmentMeta, MessageRow } from "@/apis/types";
 import { inProgressTicket } from "@/apis/public";
@@ -117,54 +117,69 @@ export default function useMessages() {
 
     // clear memory when file is cleared
     useEffect(() => {
-        if (previewUrl) {
-            URL.revokeObjectURL(previewUrl)
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl)
+            }
         }
     }, [previewUrl]);
 
     /**
      * Reformat the message before sending it to the backend
-     * TODO betetr handle transition rollback if upload and message sending failed
      * @returns
      */
     const handleSend = async () => {
-        if (!user) {return;}
+        if (!user) return;
         const content = draft.trim();
         const file = selectedFile;
 
-        if (!content || !ticketId || !user) return;
+        if ((!content && !file) || !ticketId) return;
         if (content.length > 500) {
             return { status: "fail" as const, errorMsg: `Message too long (${content.length} / 500)`, data: {} };
         }
 
         sendTyping(false);
         setDraft("");
-        setSelectedFile(null); // optimisitic reset
+        setSelectedFile(null); // optimistic reset
 
         if (messages.length === 0) await inProgressTicket(ticketId);
 
         let attachment: AttachmentMeta | undefined;
+        let uploadedFilePath: string | undefined;
+        // upload file if any
         if (file) {
-            const filePath = getFilePath(ticketId, file.name);
-            const uploadRes = await uploadAttachment(filePath, file); // upload attchment to the bucket
-            if (uploadRes.status === "success") {
-                attachment = {
-                    attachment_path: filePath,
-                    attachment_mime_type: file.type,
-                    attachment_name: file.name,
-                    attachment_size: file.size,
-                };
-                //send message
-                return await sendMessage(ticketId, user.id, content, attachment);
-            } else {
-                showErrorToast(`Could not send the message : ${uploadRes.errorMsg}`);
+            uploadedFilePath = getFilePath(ticketId, file.name);
+            const uploadRes = await uploadAttachment(uploadedFilePath, file);
+            
+            if (uploadRes.status !== "success") {
+                showErrorToast(`Could not send the message: ${uploadRes.errorMsg}`);
                 return;
             }
+
+            attachment = {
+                attachment_path: uploadedFilePath,
+                attachment_mime_type: file.type,
+                attachment_name: file.name,
+                attachment_size: file.size,
+            };
         }
 
-        // send message
-        if (content) {
-            return await sendMessage(ticketId, user.id, content);
+        // Attempt message creation with rollback cleanup on failure
+        try {
+            const sendRes = await sendMessage(ticketId, user.id, content, attachment);
+
+            // Rollback storage if the API returned an error
+            if (sendRes?.status === "fail" && uploadedFilePath) {
+                await deleteAttachment(uploadedFilePath);
+            }
+
+            return sendRes;
+        } catch (err) {
+            // Rollback storage if an uncaught exception occurred
+            if (uploadedFilePath) {
+                await deleteAttachment(uploadedFilePath);
+            }
+            throw err; // Re-throw to trigger useMutation's onError handler
         }
     };
 

@@ -68,7 +68,7 @@ BEGIN
         lm.content AS last_message_content,
         lm.created_at AS last_message_at
     FROM public.tickets AS t
-    JOIN public.profiles AS p
+    LEFT JOIN public.profiles AS p
         ON p.id = CASE WHEN t.agent_id = v_user_id THEN t.client_id ELSE t.agent_id END
     LEFT JOIN last_messages lm ON lm.ticket_id = t.id
     WHERE 
@@ -185,9 +185,11 @@ DECLARE
   v_user_id uuid := public.get_current_user();
 BEGIN
 
-    -- avoid anyone updating the last read 
-    IF NOT EXISTS(SELECT 1 FROM public.tickets t WHERE t.client_id = v_user_id OR t.agent_id = v_user_id) THEN
-        RAISE EXCEPTION 'Unauthorized', v_ticket_id
+    IF NOT EXISTS(
+        SELECT 1 FROM public.tickets t 
+        WHERE t.id = v_ticket_id AND (t.agent_id = v_user_id OR t.client_id = v_user_id)
+    ) THEN
+        RAISE EXCEPTION 'Unauthorized %', v_ticket_id
         USING ERRCODE = '42501'; -- 403 forbidden
     END IF;
 

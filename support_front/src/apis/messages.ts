@@ -10,11 +10,16 @@ export async function findUserConversations(
     last_loaded_ticket_id : string | undefined,
     last_message_at: string | undefined
 ) : Promise<ApiCallResponse> {
+    let args = {}
+    if (last_loaded_ticket_id && last_message_at) {
+        args = {
+            "v_last_loaded_ticket_id": last_loaded_ticket_id,
+            "v_last_message_at": last_message_at
+        }
+    }
+
     const {data, error} = await supabase
-                                .rpc("find_conversation_for_user", {
-                                    "v_last_loaded_ticket_id": last_loaded_ticket_id,
-                                    "v_last_message_at": last_message_at
-                                })
+                                .rpc("find_conversation_for_user", args)
     
     if (error) {
         console.error("[ERROR] Supabase error while fetching conversations", error.message);
@@ -112,14 +117,19 @@ export async function findTicketUsers(
 export async function sendMessage(
     ticketId : string, 
     senderId : string, 
-    content : string,
+    content? : string,
     attachment? : AttachmentMeta
 ) : Promise<ApiCallResponse> {
 
     let values = {
         ticket_id: ticketId, 
         sender_id: senderId, 
-        content: content,
+    }
+    if (content) {
+        values = {
+            ...values,
+            ...{content: content}
+        }
     }
     // add attachment metadat if any
     if (attachment) {
@@ -172,7 +182,10 @@ export async function fetchUnreadCounts(
 export async function markTicketRead(
     ticketId : string
 ) : Promise<ApiCallResponse> {
-    const { error } = await supabase.rpc("update_ticket_last_read", {"v_ticket_id": ticketId});
+    const { error } = await supabase.rpc(
+        "update_ticket_last_read", 
+        {"v_ticket_id": ticketId}
+    );
 
     if (error) {
         console.error("[ERROR] Supabase error while marking ticket as read", error.message);
@@ -206,6 +219,20 @@ export async function uploadAttachment(
     return { status: "success" };
 }
 
+
+/**
+ * Remove an uploaded file from the storage bucket if message insertion fails
+ * @param filePath 
+ */
+export async function deleteAttachment(filePath: string): Promise<void> {
+    const { error } = await supabase.storage
+        .from("message-attachments")
+        .remove([filePath]);
+
+    if (error) {
+        console.error("[ERROR] Failed to clean up orphaned attachment:", error.message);
+    }
+}
 
 /**
  * Get downaload signed URLs to display attachment

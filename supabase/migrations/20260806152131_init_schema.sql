@@ -208,13 +208,13 @@ CREATE TABLE public.messages (
   created_at           timestamp with time zone DEFAULT now() NOT NULL,
   ticket_id            uuid                     NOT NULL,
   sender_id            uuid                     NOT NULL,
-  content              text                     NOT NULL,
+  content              text                     DEFAULT NULL,
   attachment_url       text                     DEFAULT NULL,
   attachment_mime_type mime_type                DEFAULT NULL::mime_type,
   attachment_name      text                     DEFAULT NULL,
   attachment_size      bigint                   DEFAULT NULL,
-  CHECK (length(trim(content)) <= 500 AND length(trim(content)) > 0),
-  CHECK (length(trim(attachment_url)) <= 500 AND length(trim(attachment_url)) > 0)
+  CHECK ((content IS NULL OR length(trim(content)) <= 500) AND (content IS NULL OR length(trim(content)) > 0)),
+  CHECK ((content IS NULL OR length(trim(attachment_url)) <= 2000) AND (attachment_name IS NULL OR length(trim(attachment_url)) > 0))
 );
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ADD CONSTRAINT messages_pkey PRIMARY KEY (id);

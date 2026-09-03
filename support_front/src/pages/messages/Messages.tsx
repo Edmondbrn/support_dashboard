@@ -91,9 +91,11 @@ export default function Messages() {
                             key={m.id}
                             sentAt={formatDate(m.created_at)}
                             senderName={m.sender?.username ?? "unknown"}
-                        >
-                            {m.content ?? ""}
-                        </MessageCard>
+                            content={m.content}
+                            attachmentMimeType={m.attachment_mime_type}
+                            attachmentPath={m.attachment_url}
+                            attachmentName={m.attachment_name}
+                        />
                     </div>
                 ))}
                 {isTyping && (
