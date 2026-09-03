@@ -13,6 +13,9 @@ import {
     TicketPlus
 } from "lucide-react";
 import { NavLink } from "react-router";
+import { getUserInitials } from "@/utils/userUtils";
+import UserAvatar from "./UserAvatar";
+import { useRealtime } from "@/contexts/RealTimeContext";
 
 type UserRole = Database["public"]["Enums"]["roles"];
 
@@ -20,12 +23,13 @@ interface NavItem {
     label: string;
     to: string;
     icon: LucideIcon;
+    end?: boolean;
 }
 
 const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     client: [
         { label: "Dashboard", to: appRoutes.HOME, icon: LayoutDashboard },
-        { label: "Tickets", to: appRoutes.TICKETS, icon: Ticket },
+        { label: "Tickets", to: appRoutes.TICKETS, icon: Ticket, end: true },
         { label: "Create ticket", to: appRoutes.TICKET_CREATE, icon: TicketPlus },
         { label: "Messages", to: appRoutes.MESSAGES, icon: MessageSquare }
     ],
@@ -44,6 +48,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
 
 export default function NavBar() {
     const { user, profile, role } = useAuth();
+    const { unreadCount } = useRealtime();
 
     // default to the client menu while loading or as fallback
     const menu = NAV_ITEMS[role ?? "client"];
@@ -52,13 +57,7 @@ export default function NavBar() {
         return null;
     }
 
-    const displayName = profile?.username ?? user.email ?? "User";
-    const initials = displayName
-        .split(/\s+/) // split by space
-        .map((part) => part.charAt(0)) // get first letter of each block
-        .slice(0, 2) // keep only the two first letters
-        .join("")
-        .toUpperCase();
+    const initials = getUserInitials(profile);
 
     return (
         <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/60 backdrop-blur-md">
@@ -79,6 +78,7 @@ export default function NavBar() {
                         <NavLink
                             key={item.to}
                             to={item.to}
+                            end={item.end}
                             className={({ isActive }) =>
                                 cn(
                                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
@@ -89,7 +89,22 @@ export default function NavBar() {
                             }
                         >
                             <item.icon className="size-4" />
-                            <span className="hidden md:inline">{item.label}</span>
+                            {
+                                item.to === appRoutes.MESSAGES
+                                    // add read count for message menu
+                                    ? (
+                                        <div className="relative shrink-0">
+                                            <span className="hidden md:inline">{item.label}</span>
+                                            {/* undread count badge */}
+                                            {unreadCount > 0 && (
+                                            <span className="absolute -right-4 -top-2 flex size-5 items-center justify-center rounded-full bg-orange-500 text-[11px] font-semibold text-white ring-2 ring-black/40">
+                                                {unreadCount > 9 ? "9+" : unreadCount}
+                                            </span>
+                                            )}
+                                        </div>
+                                    )
+                                    : <span className="hidden md:inline">{item.label}</span>
+                            }
                         </NavLink>
                     ))}
                 </nav>
@@ -97,11 +112,9 @@ export default function NavBar() {
                 {/* User area */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                        <span className="flex size-8 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white ring-1 ring-white/10">
-                            {initials}
-                        </span>
+                        <UserAvatar initials={initials} />
                         <span className="hidden text-sm text-slate-200 md:block">
-                            {displayName}
+                            {profile?.username ?? "User"}
                         </span>
                     </div>
                     <Button

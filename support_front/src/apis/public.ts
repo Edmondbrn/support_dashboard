@@ -176,6 +176,31 @@ export async function claimTicket(
 
 }
 
+
+/**
+ * API for an agent to claim (assign to himself) an unassigned ticket
+ * @param ticketId 
+ * @param agentId 
+ * @returns 
+ */
+export async function inProgressTicket(
+    ticketId: string
+) : Promise<ApiCallResponse> {
+
+    const {data, error} = await supabase
+                        .rpc("in_progress_ticket", {
+                            "p_ticket_id": ticketId,
+                        });
+
+    if (error) {
+        console.error("[ERROR] Supabase error while updating the ticket status", error.message);
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
+    }
+
+    return {status: "success", data: data};
+
+}
+
 /**
  * API to delete an open ticket
  * @param ticketId 

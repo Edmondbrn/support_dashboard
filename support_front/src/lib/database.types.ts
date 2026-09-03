@@ -36,26 +36,35 @@ export type Database = {
     Tables: {
       messages: {
         Row: {
+          attachment_mime_type: Database["public"]["Enums"]["mime_type"] | null
+          attachment_name: string | null
+          attachment_size: number | null
           attachment_url: string | null
           content: string | null
           created_at: string
-          id: number
+          id: string
           sender_id: string
           ticket_id: string
         }
         Insert: {
+          attachment_mime_type?: Database["public"]["Enums"]["mime_type"] | null
+          attachment_name?: string | null
+          attachment_size?: number | null
           attachment_url?: string | null
           content?: string | null
           created_at?: string
-          id?: number
+          id?: string
           sender_id: string
           ticket_id: string
         }
         Update: {
+          attachment_mime_type?: Database["public"]["Enums"]["mime_type"] | null
+          attachment_name?: string | null
+          attachment_size?: number | null
           attachment_url?: string | null
           content?: string | null
           created_at?: string
-          id?: number
+          id?: string
           sender_id?: string
           ticket_id?: string
         }
@@ -96,6 +105,39 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      ticket_reads: {
+        Row: {
+          last_read_at: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_reads_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tickets: {
         Row: {
@@ -165,12 +207,46 @@ export type Database = {
         Returns: boolean
       }
       close_ticket: { Args: { p_ticket_id: string }; Returns: boolean }
+      find_conversation_by_id: {
+        Args: { v_ticket_id: string }
+        Returns: {
+          category: Database["public"]["Enums"]["ticket_category"]
+          created_at: string
+          description: string
+          id: string
+          last_message_at: string
+          last_message_content: string
+          other_user_id: string
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          status: Database["public"]["Enums"]["ticket_status"]
+          username: string
+        }[]
+      }
+      find_conversation_for_user: {
+        Args: { v_last_loaded_ticket_id?: string; v_last_message_at?: string }
+        Returns: {
+          category: Database["public"]["Enums"]["ticket_category"]
+          created_at: string
+          description: string
+          id: string
+          last_message_at: string
+          last_message_content: string
+          other_user_id: string
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          status: Database["public"]["Enums"]["ticket_status"]
+          username: string
+        }[]
+      }
       get_current_user: { Args: never; Returns: string }
       get_role: { Args: never; Returns: string }
-      get_ticket_agent_username: {
-        Args: { p_ticket_id: string }
-        Returns: string
+      get_unread_counts: {
+        Args: never
+        Returns: {
+          ticket_id: string
+          unread_count: number
+        }[]
       }
+      in_progress_ticket: { Args: { p_ticket_id: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_agent: { Args: never; Returns: boolean }
       reassign_ticket: {
@@ -184,8 +260,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_ticket_last_read: {
+        Args: { v_ticket_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
+      mime_type: "image/png" | "image/jpeg" | "image/jpg" | "application/pdf"
       roles: "admin" | "client" | "agent"
       ticket_category: "software" | "hardware" | "delivery" | "payment"
       ticket_priority: "low" | "medium" | "high"
@@ -320,6 +401,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      mime_type: ["image/png", "image/jpeg", "image/jpg", "application/pdf"],
       roles: ["admin", "client", "agent"],
       ticket_category: ["software", "hardware", "delivery", "payment"],
       ticket_priority: ["low", "medium", "high"],

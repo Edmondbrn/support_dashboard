@@ -6,24 +6,31 @@ import Signin from './pages/auth/signin';
 import Home from './pages/home/home';
 import Tickets from './pages/tickets/tickets';
 import CreateTicket from './pages/tickets/createTicket';
-import Messages from './pages/messages/messages';
+import Messages from './pages/messages/Messages';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import NavBar from './components/shared/navBar';
 import { useAuth } from './contexts/AuthContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { appRoutes } from './config';
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { RealtimeProvider } from './contexts/RealTimeContext';
+import MessageList from './pages/messages/MessageList';
 
 
 const RootLayout = () => {
   const { user } = useAuth();
   return (
-    <div className='min-h-screen text-white'>
-      {user && <NavBar />}
-      {/* Page body */}
-      <main className='bg-navy-gradient min-h-screen'>
-        <Outlet />
-      </main>
-    </div>
+    // Mandatory at Router level
+    <RealtimeProvider>
+      <div className='min-h-screen text-white'>
+        {user && <NavBar />}
+        {/* Page body */}
+        <main className='bg-navy-gradient'>
+            <Outlet />
+        </main>
+      </div>
+    </RealtimeProvider>
+
   );
 }
 
@@ -66,13 +73,21 @@ const router = createBrowserRouter([
         )
       },
       {
-        path: appRoutes.MESSAGES,
+        path: appRoutes.MESSAGES_TICKET,
         element: (
           <ProtectedRoute>
             <Messages/>
           </ProtectedRoute>
         )
-      }
+      },
+      {
+        path: appRoutes.MESSAGES,
+        element: (
+          <ProtectedRoute>
+            <MessageList/>
+          </ProtectedRoute>
+        )
+      },
     ]
   }
 ])
@@ -80,7 +95,9 @@ const router = createBrowserRouter([
 function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <TooltipProvider>
+          <RouterProvider router={router} />
+      </TooltipProvider>
     </AuthProvider>
   );
 }

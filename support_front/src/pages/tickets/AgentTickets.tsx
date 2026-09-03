@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TicketCard from "@/components/tickets/TicketCard";
 import useTickets from "@/hooks/tickets/useTickets";
 import type { Ticket, TicketCategory, TicketPriority } from "@/apis/types";
+import { useNavigate } from "react-router";
 
 const PRIORITY_FILTERS: { value: TicketPriority | "all"; label: string }[] = [
     { value: "all", label: "All priorities" },
@@ -35,6 +36,7 @@ type SortOption = (typeof SORT_OPTIONS)[number]["value"];
  * Agent view: unassigned ticket queue (claimable + filterable) and assigned tickets.
  */
 export default function AgentTickets() {
+    const navigate = useNavigate();
     const {
         unassignedTickets,
         isUnassignedTicketLoading,
@@ -155,6 +157,7 @@ export default function AgentTickets() {
                         )
                     }
 
+                    {/* Unassigned ticket, no message */}
                     {
                         !isUnassignedTicketLoading && !isUnassignedTicketError && filteredUnassignedTickets.length > 0 && (
                             <ul className="grid w-full list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 md:grid-cols-3">
@@ -162,10 +165,9 @@ export default function AgentTickets() {
                                     <li key={ticket.id}>
                                         <TicketCard
                                             ticket={ticket}
-                                            actionLabel="Claim"
-                                            onAction={(t) => claimTicket({ ticketId: t.id })}
-                                            isActionLoading={isClaimTicketLoading && claimingTicketId === ticket.id}
-                                            isActionDisabled={isClaimTicketLoading}
+                                            onClaimTicket={() => claimTicket({ticketId: ticket.id})}
+                                            isClaimTicketLoading={isClaimTicketLoading}
+                                            claimingTicketId={claimingTicketId}
                                         />
                                     </li>
                                 ))}
@@ -206,6 +208,8 @@ export default function AgentTickets() {
                                             ticket={ticket}
                                             showStatus
                                             showAgent
+                                            onOpenConversation={() => navigate(`/messages/${ticket.id}`)}
+                                        
                                         />
                                     </li>
                                 ))}

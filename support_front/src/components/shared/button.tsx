@@ -2,7 +2,6 @@ import type { BaseUIEvent } from "@base-ui/react";
 import { Button } from "../ui/button";
 import { Spinner } from "../ui/spinner";
 
-
 type BtnVersion = "primary" | "secondary" | "danger";
 
 interface BtnProps {

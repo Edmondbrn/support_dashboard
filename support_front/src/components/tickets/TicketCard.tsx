@@ -4,17 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { Btn } from "@/components/shared/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Ticket } from "@/apis/types";
-import { timeStampToDate } from "@/utils/dateUtils";
 import { getCategoryBadgeVariant, getPriorityBadgeVariant, getStatusBadgeVariant } from "@/utils/ticketBadges";
+import { MessageSquareIcon } from "lucide-react";
 
 interface TicketCardProps {
     ticket: Ticket;
     showStatus?: boolean;
     showAgent?: boolean;
-    actionLabel?: string;
-    onAction?: (ticket: Ticket) => void;
-    isActionLoading?: boolean;
-    isActionDisabled?: boolean;
+    showClaim: boolean;
+    onOpenConversation?: () => void;
+    onClaimTicket? : () => void;
+    isClaimTicketLoading? : boolean;
+    claimingTicketId? : string;
 }
 
 /**
@@ -24,16 +25,19 @@ export default function TicketCard({
     ticket,
     showStatus = false,
     showAgent = false,
-    actionLabel,
-    onAction,
-    isActionLoading = false,
-    isActionDisabled = false,
+    showClaim = true,
+    onOpenConversation,
+    onClaimTicket,
+    isClaimTicketLoading,
+    claimingTicketId
 }: TicketCardProps) {
+
+
     return (
         <Card
             tabIndex={0}
             role="button"
-            className="h-full bg-glass text-white
+            className="h-full w-full bg-glass text-white
                         cursor-pointer transition-all duration-500 ease-in-out hover:-translate-y-1 hover:scale-105
                         focus:outline-none focus:ring-2 focus:ring-offset-2"
             onKeyDown={(e) => {
@@ -55,7 +59,7 @@ export default function TicketCard({
             </CardHeader>
 
             <CardContent>
-                <dl className="flex flex-col gap-5 h-full">
+                <dl className="flex flex-col gap-5 h-full w-full">
 
                     <div className="flex flex-col items-start text-start gap-2 h-20">
                         <dt className="font-semibold underline">Description</dt>
@@ -86,29 +90,34 @@ export default function TicketCard({
                         )
                     }
 
-                    {/* Action button (delete ticket for open ticket for client and claim for agent)) */}
-                    {
-                        actionLabel && onAction && (
-                            <Btn
-                                isLoading={isActionLoading}
-                                disabled={isActionDisabled}
-                                version="secondary"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onAction(ticket);
-                                }}
-                            >
-                                {actionLabel}
-                            </Btn>
+                    {/* Open conversation button or add claime button (cannot be both) */}
+                    {onOpenConversation 
+                        ? (
+                            <div className="flex justify-end">
+                                <Btn
+                                    version="primary"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onOpenConversation();
+                                    }}
+                                >
+                                    <MessageSquareIcon className="mr-1 size-3" />
+                                    Open conversation
+                                </Btn>
+                            </div>
+                        )
+                        : showClaim && (
+                            <div className="grid grid-cols-1 mt-2">
+                                <Btn
+                                    version="primary"
+                                    onClick={() => onClaimTicket!()}
+                                    isLoading={Boolean(isClaimTicketLoading) && claimingTicketId === ticket.id}
+                                >
+                                    Claim
+                                </Btn>
+                            </div>
                         )
                     }
-
-                    <time
-                        dateTime={ticket.created_at}
-                        className="w-full border-t border-white/10 pt-3 text-start text-xs text-slate-300"
-                    >
-                        {timeStampToDate(ticket.created_at)}
-                    </time>
                 </dl>
             </CardContent>
         </Card>
