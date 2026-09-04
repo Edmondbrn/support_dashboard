@@ -30,11 +30,11 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'app_supabase_url') THEN
 		PERFORM vault.update_secret(
 			(SELECT id FROM vault.secrets WHERE name = 'app_supabase_url'),
-			'http://127.0.0.1:54321'
+			'http://kong:8000'
 		);
 	ELSE
 		PERFORM vault.create_secret(
-		'http://127.0.0.1:54321',
+		'http://kong:8000',
 		'app_supabase_url'
 		);
 	END IF;
