@@ -24,10 +24,7 @@ interface ResendReqBody {
 }
 
 // ---------------------------------------------------------------------------
-// Design tokens — dark-blue "glass" surface with an orange accent.
-// Email clients don't support CSS vars or backdrop-filter, so these are
-// baked in as literal values and the "glass" look is faked with layered
-// translucent panels + a soft border instead of a real blur.
+// Design: transparent-glass effect, darh blue and orange
 // ---------------------------------------------------------------------------
 const COLORS = {
   bg: "#050914",          // page background, near-black navy
