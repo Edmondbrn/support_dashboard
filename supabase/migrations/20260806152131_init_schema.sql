@@ -3,6 +3,7 @@
 -- Boundary reason: default
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pg_net";
 
 CREATE TYPE public.roles AS ENUM (
   'admin',
@@ -257,6 +258,74 @@ CREATE INDEX tickets_id_agent_id_idx ON public.tickets (agent_id, id);
 
 
 --------- RPC functions --------------
+CREATE OR REPLACE FUNCTION public.send_mail(
+  p_targets uuid[],
+  p_subject text,
+  p_meta    jsonb DEFAULT '{}'::jsonb
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+declare
+  v_url         text;
+  v_secret_key  text;
+  v_payload     jsonb;
+  v_request_id  bigint;
+BEGIN
+  -- get url from the vault
+  SELECT DECRYPTED_SECRET INTO v_url
+  FROM vault.decrypted_secrets
+  WHERE NAME = 'app_supabase_url';
+  -- get service key from the vault
+  SELECT DECRYPTED_SECRET INTO v_secret_key
+  FROM vault.decrypted_secrets
+  WHERE NAME = 'edge_function_resend_secret';
+
+  v_url := rtrim(nullif(v_url, ''), '/') || '/functions/v1/resend';
+
+  -- Silent break up
+  IF v_url IS NULL OR v_secret_key IS NULL THEN
+    raise warning '[send_mail] Missing settings, notification ignored';
+    RETURN FALSE;
+  END IF;
+
+  v_payload := jsonb_build_object(
+    'targets',  p_targets,
+    'subject',  p_subject,
+    'meta',     coalesce(p_meta, '{}'::jsonb)
+  );
+
+  -- async HTTP call ( do not block the transaction )
+  SELECT net.http_post(
+    url     := v_url,
+    headers := jsonb_build_object(
+      'Content-Type',  'application/json',
+      'X-RPC-Secret',  v_secret_key
+    ),
+    body    := v_payload
+  )
+  into v_request_id;
+
+  -- debug log (visible in table net._http_response)
+  RAISE NOTICE '[send_mail] request_id=% action=% targets=% meta=%',
+    v_request_id, p_subject, p_targets, p_meta;
+
+  RETURN TRUE;
+
+  EXCEPTION
+    -- catch everything to avoid blocking the transaction
+    WHEN OTHERS THEN
+      RAISE WARNING '[send_mail] Skipped error : % %', SQLSTATE, SQLERRM;
+      RETURN FALSE;
+
+END;
+$function$;
+
+-- only accessible by the admin
+REVOKE ALL ON FUNCTION public.send_mail(uuid[], text, jsonb) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.send_mail(uuid[], text, jsonb) TO postgres;
 
 
 CREATE OR REPLACE FUNCTION public.reassign_ticket(
@@ -353,44 +422,64 @@ SET search_path TO 'public'
 AS $function$
 DECLARE
   v_is_ticket_claimed boolean;
+  v_target_uid        uuid;
+  v_ticket_description       text;
+  v_agent_name         text;
 BEGIN
-
+ 
   IF NOT public.is_agent() THEN
     RAISE EXCEPTION 'Forbidden'
       USING ERRCODE = '42501'; -- 403 Forbidden
   END IF;
-
+ 
   -- Check if the ticket already has been claimed by someone else
-
   v_is_ticket_claimed := EXISTS(
-    SELECT 1 
-    FROM public.tickets AS t 
+    SELECT 1
+    FROM public.tickets AS t
     WHERE t.id = p_ticket_id AND t.agent_id IS NOT NULL
   );
-  
+ 
   IF v_is_ticket_claimed THEN
     RAISE EXCEPTION 'Forbidden: ticket already claimed'
       USING ERRCODE = '42501'; -- 403 Forbidden
   END IF;
-
+ 
   UPDATE public.tickets
   SET agent_id = p_agent_id
-  WHERE id = p_ticket_id;
-
+  WHERE id = p_ticket_id
+  RETURNING client_id, description
+  INTO v_target_uid, v_ticket_description;
+ 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Ticket % not found', p_ticket_id
       USING ERRCODE = 'P0002'; -- 404 Not Found
   END IF;
-
+ 
+  -- agent display name for the email body ("Alex is now handling...")
+  SELECT username INTO v_agent_name
+  FROM public.profiles
+  WHERE id = p_agent_id;
+  
+  -- send the mail
+  PERFORM public.send_mail(
+    p_targets := ARRAY[v_target_uid],
+    p_subject := 'claim_ticket',
+    p_meta    := jsonb_build_object(
+      'ticket_id',    p_ticket_id,
+      'ticket_title', v_ticket_description,
+      'agent_name',   v_agent_name
+    )
+  );
+ 
   RETURN TRUE;
 END;
 $function$;
-
+ 
 REVOKE ALL ON FUNCTION public.claim_ticket(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.claim_ticket(uuid, uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.claim_ticket(uuid, uuid) TO authenticated;
-
-
+ 
+ 
 CREATE OR REPLACE FUNCTION public.close_ticket(
   p_ticket_id uuid
 )
@@ -403,46 +492,53 @@ DECLARE
   v_user_role        text;
   v_user_id          uuid;
   v_is_claimed_agent boolean;
+  v_target_uid       uuid;
+  v_ticket_description      text;
 BEGIN
-
+ 
   v_user_id   := public.get_current_user();
   v_user_role := public.get_role();
-
+ 
   IF v_user_role = 'client' THEN
     RAISE EXCEPTION 'Forbidden'
       USING ERRCODE = '42501'; -- 403 Forbidden
   END IF;
-
-  -- chekc if the current agent is the assigned one
+ 
+  -- check if the current agent is the assigned one
   v_is_claimed_agent := (v_user_role = 'admin') OR EXISTS (
     SELECT 1 FROM public.tickets t
     WHERE t.id = p_ticket_id AND t.agent_id = v_user_id
   );
-
+ 
   IF NOT v_is_claimed_agent THEN
     RAISE EXCEPTION 'Forbidden'
       USING ERRCODE = '42501'; -- 403 Forbidden
   END IF;
-
-
+ 
   UPDATE public.tickets
   SET status = 'closed'::ticket_status, closed_by = v_user_id
-  WHERE id = p_ticket_id;
-
+  WHERE id = p_ticket_id
+  RETURNING client_id, description
+  INTO v_target_uid, v_ticket_description;
+ 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Ticket % not found', p_ticket_id
       USING ERRCODE = 'P0002'; -- 404 Not Found
   END IF;
-
+ 
+  -- notify the client the ticket was closed
+  PERFORM public.send_mail(
+    p_targets := ARRAY[v_target_uid],
+    p_subject := 'close_ticket',
+    p_meta    := jsonb_build_object(
+      'ticket_id',    p_ticket_id,
+      'ticket_title', v_ticket_description
+    )
+  );
+ 
   RETURN TRUE;
 END;
 $function$;
-
-REVOKE ALL ON FUNCTION public.close_ticket(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.close_ticket(uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION public.close_ticket(uuid) TO authenticated;
-
-
 
 CREATE OR REPLACE FUNCTION public.in_progress_ticket(
   p_ticket_id uuid

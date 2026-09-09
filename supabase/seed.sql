@@ -22,6 +22,42 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Insert into vaults
+--
+
+DO $$
+BEGIN
+	IF EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'app_supabase_url') THEN
+		PERFORM vault.update_secret(
+			(SELECT id FROM vault.secrets WHERE name = 'app_supabase_url'),
+			'http://kong:8000'
+		);
+	ELSE
+		PERFORM vault.create_secret(
+		'http://kong:8000',
+		'app_supabase_url'
+		);
+	END IF;
+END
+$$;
+
+DO $$
+BEGIN
+	IF EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'edge_function_resend_secret') THEN
+		PERFORM vault.update_secret(
+			(SELECT id FROM vault.secrets WHERE name = 'edge_function_resend_secret'),
+			'/Vsw3+7Ns8WRKgtjt5DfGEuaeKSPkn+n2bUTNpopzrs='
+		);
+	ELSE
+		PERFORM vault.create_secret(
+		'/Vsw3+7Ns8WRKgtjt5DfGEuaeKSPkn+n2bUTNpopzrs=',
+		'edge_function_resend_secret'
+		);
+	END IF;
+END
+$$;
+
+--
 -- Data for Name: audit_log_entries; Type: TABLE DATA; Schema: auth; Owner: supabase_auth_admin
 --
 
