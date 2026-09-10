@@ -582,7 +582,7 @@ BEGIN
 
 
   UPDATE public.tickets
-  SET status = 'in_progress'::ticket_status, closed_by = v_user_id
+  SET status = 'in_progress'::ticket_status, closed_by = null
   WHERE id = p_ticket_id
   RETURNING client_id, description
   INTO v_target_uid, v_ticket_description;

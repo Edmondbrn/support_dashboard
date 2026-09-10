@@ -64,7 +64,7 @@ export default function Messages() {
         return (
             <div className="flex flex-col items-center justify-center gap-2">
                 <h2 className="text-lg font-medium text-white">Closed ticket</h2>
-                <p className="text-sm text-slate-400">{`This ticket has been closed by ${ticket.close_agent.username}. You cannot send new messages.`}</p>
+                <p className="text-sm text-slate-400">{`This ticket has been closed by ${ticket.close_agent?.username ?? "an agent"}. You cannot send new messages.`}</p>
             </div>
         )
     }
