@@ -178,6 +178,29 @@ export async function claimTicket(
 
 
 /**
+ * API to close a ticket. Only the dedicated agent and the admin can close a ticket
+ * @param ticketId 
+ * @param agentId 
+ * @returns 
+ */
+export async function closeTicket(
+    ticketId: string,
+) : Promise<ApiCallResponse> {
+
+    const {data, error} = await supabase
+                        .rpc("close_ticket", {
+                            "p_ticket_id": ticketId,
+                        });
+
+    if (error) {
+        console.error("[ERROR] Supabase error while closing the ticket", error.message);
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
+    }
+
+    return {status: "success", data: data};
+}
+
+/**
  * API for an agent to claim (assign to himself) an unassigned ticket
  * @param ticketId 
  * @param agentId 

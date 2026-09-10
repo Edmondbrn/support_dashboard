@@ -228,6 +228,7 @@ export default function useMessages() {
         selectedFile,
         previewUrl,
         listRef,
-        messages
+        messages,
+        profile
     };
 }

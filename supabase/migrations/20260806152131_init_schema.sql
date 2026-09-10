@@ -421,9 +421,9 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
 DECLARE
-  v_is_ticket_claimed boolean;
-  v_target_uid        uuid;
-  v_ticket_description       text;
+  v_is_ticket_claimed  boolean;
+  v_target_uid         uuid;
+  v_ticket_description text;
   v_agent_name         text;
 BEGIN
  

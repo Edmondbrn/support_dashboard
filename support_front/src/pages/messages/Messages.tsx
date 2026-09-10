@@ -4,6 +4,9 @@ import { InboxIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import MessageInput from "@/components/messages/MessageInput";
 import MessageList from "./MessageList";
+import { Btn } from "@/components/shared/button";
+import useTickets from "@/hooks/tickets/useTickets";
+import { useConfirm } from "@/contexts/ConfirmationDialogContext";
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString();
@@ -17,10 +20,15 @@ export default function Messages() {
         isTyping,
         isMessagesLoading,
         isTicketUserLoading,
+        messages,
         listRef,
-        messages
+        profile
     } = useMessages();
 
+    const {
+        handleClose,
+        isCloseTicketLoading
+    } = useTickets();
 
     // State: No ticket selected (base /messages route)
     if (!ticketId) {
@@ -61,20 +69,34 @@ export default function Messages() {
                  ? <Spinner className="size-8 text-white"/>
                  : Object.entries(counterpartOnline).map(([username, isOnline]) => {
                     return (
-                        <div key={`onlineStatus-${username}`} className="flex items-center gap-2 border-b border-white/10 pb-3">
-                            <span
-                                className={`size-2.5 rounded-full ${
-                                    isOnline ? "bg-emerald-400" : "bg-slate-500"
-                                }`}
-                            />
-                            <span className="text-sm text-white">
-                                {username}
-                            </span>
-                            {isTyping && (
-                                <span className="ml-auto text-sm italic text-orange-300">
-                                    is typing…
+                        <div key={`onlineStatus-${username}`} className="flex justify-between gap-2 border-b border-white/10 pb-3">
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className={`size-2.5 rounded-full ${
+                                        isOnline ? "bg-emerald-400" : "bg-slate-500"
+                                    }`}
+                                />
+                                <span className="text-sm text-white">
+                                    {username}
                                 </span>
-                            )}
+                            </div>
+                            
+                            <div className="flex flex-col md:flex-row items-center gap-2">
+                                {( profile && profile.role === "agent") &&
+                                    <Btn 
+                                        version="secondary" 
+                                        onClick={() => handleClose(ticketId)}
+                                        isLoading={isCloseTicketLoading}
+                                    >
+                                        Close ticket
+                                    </Btn>
+                                }
+                                {isTyping && (
+                                    <span className="ml-auto text-sm italic text-orange-300">
+                                        is typing…
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     )
                 })
