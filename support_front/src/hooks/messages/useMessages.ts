@@ -141,7 +141,7 @@ export default function useMessages() {
         sendTyping(false);
         setDraft("");
         setSelectedFile(null); // optimistic reset
-
+        // mark the ticket as in progress after the first message
         if (messages.length === 0) await inProgressTicket(ticketId);
 
         let attachment: AttachmentMeta | undefined;
@@ -228,6 +228,7 @@ export default function useMessages() {
         selectedFile,
         previewUrl,
         listRef,
-        messages
+        messages,
+        profile
     };
 }

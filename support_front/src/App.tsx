@@ -15,6 +15,7 @@ import { appRoutes } from './config';
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { RealtimeProvider } from './contexts/RealTimeContext';
 import MessageList from './pages/messages/MessageList';
+import { ConfirmProvider } from './contexts/ConfirmationDialogContext';
 
 
 const RootLayout = () => {
@@ -96,7 +97,9 @@ function App() {
   return (
     <AuthProvider>
       <TooltipProvider>
+        <ConfirmProvider>
           <RouterProvider router={router} />
+        </ConfirmProvider>
       </TooltipProvider>
     </AuthProvider>
   );

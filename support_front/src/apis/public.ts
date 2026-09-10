@@ -88,6 +88,41 @@ export async function findTicketsByClient(
 
 
 /**
+ * Funtion to find a ticket by its id
+ * @param ticketId 
+ * @returns 
+ */
+export async function findTicketById(
+    ticketId: string, 
+) : Promise<ApiCallResponse> {
+
+    const {data, error} = await supabase
+                        .from("tickets")
+                        .select(`
+                            id, 
+                            description,
+                            status, 
+                            priority, 
+                            created_at, 
+                            close_agent:profiles!closed_by (
+                                username
+                            ),
+                            category`
+                        )
+                        .eq("id", ticketId)
+                        .maybeSingle();
+
+    if (error) {
+        console.error("[ERROR] Supabase error for ticket for the id: " + ticketId, error.message);
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
+    }
+
+    return {status: "success", data: data};
+    
+}
+
+
+/**
  * API to find unassigned ticket to let agent choose one
  * @returns 
  */
@@ -178,6 +213,29 @@ export async function claimTicket(
 
 
 /**
+ * API to close a ticket. Only the dedicated agent and the admin can close a ticket
+ * @param ticketId 
+ * @param agentId 
+ * @returns 
+ */
+export async function closeTicket(
+    ticketId: string,
+) : Promise<ApiCallResponse> {
+
+    const {data, error} = await supabase
+                        .rpc("close_ticket", {
+                            "p_ticket_id": ticketId,
+                        });
+
+    if (error) {
+        console.error("[ERROR] Supabase error while closing the ticket", error.message);
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
+    }
+
+    return {status: "success", data: data};
+}
+
+/**
  * API for an agent to claim (assign to himself) an unassigned ticket
  * @param ticketId 
  * @param agentId 
@@ -198,7 +256,6 @@ export async function inProgressTicket(
     }
 
     return {status: "success", data: data};
-
 }
 
 /**
