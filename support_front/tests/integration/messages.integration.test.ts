@@ -423,6 +423,59 @@ describe("messages/conversation APIs", () => {
             const res = await sendMessage(foreignTicket.id, client!.userId, "intrusion");
             expect(res.status).toBe("fail");
         });
+
+        it("rejects sending a message to a closed ticket (client blocked by RLS)", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "Closed ticket"))
+                .data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: agent!.userId }).eq("id", ticket.id);
+
+            // Close the ticket bypassing RLS so the test focuses on the messages policy.
+            const { error: closeError } = await adminClient
+                .from("tickets")
+                .update({ status: "closed", closed_by: agent!.userId })
+                .eq("id", ticket.id);
+            expect(closeError).toBeNull();
+
+            const res = await sendMessage(ticket.id, client!.userId, "after close");
+            expect(res.status).toBe("fail");
+            expect(res.errorMsg).toBeDefined();
+            expect(res.errorCode).toBe("42501");
+
+            // No message must have been persisted.
+            const { data: rows, error } = await adminClient
+                .from("messages")
+                .select("id")
+                .eq("ticket_id", ticket.id);
+            expect(error).toBeNull();
+            expect(rows).toHaveLength(0);
+        });
+
+        it("rejects sending a message to a closed ticket (assigned agent blocked by RLS)", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (
+                await createTicket(client!.userId, "software", "low", "Closed for agent")
+            ).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: agent!.userId }).eq("id", ticket.id);
+            const { error: closeError } = await adminClient
+                .from("tickets")
+                .update({ status: "closed", closed_by: agent!.userId })
+                .eq("id", ticket.id);
+            expect(closeError).toBeNull();
+
+            await signIn(agentEmail, agentPassword);
+            const res = await sendMessage(ticket.id, agent!.userId, "agent after close");
+            expect(res.status).toBe("fail");
+            expect(res.errorMsg).toBeDefined();
+            expect(res.errorCode).toBe("42501");
+
+            const { data: rows, error } = await adminClient
+                .from("messages")
+                .select("id")
+                .eq("ticket_id", ticket.id);
+            expect(error).toBeNull();
+            expect(rows).toHaveLength(0);
+        });
     });
 
     describe("fetchUnreadCounts", () => {
