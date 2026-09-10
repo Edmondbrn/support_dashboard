@@ -256,7 +256,6 @@ export async function inProgressTicket(
     }
 
     return {status: "success", data: data};
-
 }
 
 /**

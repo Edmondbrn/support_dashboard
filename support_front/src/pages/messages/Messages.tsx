@@ -31,7 +31,8 @@ export default function Messages() {
     const {
         handleClose,
         isCloseTicketLoading,
-        findTicketByIdQuery
+        findTicketByIdQuery,
+        handleInProgress
     } = useTickets();
     
 
@@ -43,7 +44,7 @@ export default function Messages() {
         if (ticket.status === "closed") {
             return <Btn 
                 version="secondary" 
-                onClick={() => handleClose(ticketId)}
+                onClick={() => handleInProgress(ticketId)}
                 isLoading={isCloseTicketLoading}
             >
                 Reopen ticket
@@ -57,6 +58,15 @@ export default function Messages() {
                 Close ticket
             </Btn>
         }
+    }
+
+    function closedTicketSection(ticket : TicketById) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-2">
+                <h2 className="text-lg font-medium text-white">Closed ticket</h2>
+                <p className="text-sm text-slate-400">{`This ticket has been closed by ${ticket.close_agent.username}. You cannot send new messages.`}</p>
+            </div>
+        )
     }
     
     // State: No ticket selected (base /messages route)
@@ -90,14 +100,26 @@ export default function Messages() {
         return (
             <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col px-10 py-5">
                 {/* Empty state header */}
-                <div className="flex flex-col items-center justify-center gap-2 py-20">
-                    <InboxIcon className="size-10 text-orange-300" />
-                    <h2 className="text-lg font-medium text-white">No messages yet</h2>
-                    <p className="text-sm text-slate-400">Send the first message to start the conversation</p>
-                    {agentActionBtn(ticketId, ticket)}
-                </div>
+                {
+                    ticket.status === "closed"
+                        ?
+                            <div>
+                                {closedTicketSection(ticket)}
+                                {agentActionBtn(ticketId, ticket)}
+                            </div>
+                        : (
+                            <>
+                                <div className="flex flex-col items-center justify-center gap-2 py-20">
+                                    <InboxIcon className="size-10 text-orange-300" />
+                                    <h2 className="text-lg font-medium text-white">No messages yet</h2>
+                                    <p className="text-sm text-slate-400">Send the first message to start the conversation</p>
+                                    {agentActionBtn(ticketId, ticket)}
+                                </div>
+                                <MessageInput />
+                            </>
+                        )
+                }
 
-                <MessageInput />
             </div>
         );
     }
@@ -154,10 +176,7 @@ export default function Messages() {
                             </div>
 
                             { ticket.status === "closed" && 
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                    <h2 className="text-lg font-medium text-white">Closed ticket</h2>
-                                    <p className="text-sm text-slate-400">{`This ticket has been closed by ${ticket.close_agent.username}. You cannot send new messages`}</p>
-                                </div>
+                                closedTicketSection(ticket)
                             }
                         </div>
                     )

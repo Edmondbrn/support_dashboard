@@ -539,6 +539,12 @@ BEGIN
 END;
 $function$;
 
+
+REVOKE ALL ON FUNCTION public.close_ticket(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.close_ticket(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.close_ticket(uuid) TO authenticated;
+
+
 CREATE OR REPLACE FUNCTION public.in_progress_ticket(
   p_ticket_id uuid
 )
@@ -548,9 +554,11 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $function$
 DECLARE
-  v_user_role        text;
-  v_user_id          uuid;
-  v_is_claimed_agent boolean;
+  v_user_role               text;
+  v_user_id                 uuid;
+  v_is_claimed_agent        boolean;
+  v_target_uid              uuid;
+  v_ticket_description      text;
 BEGIN
 
   v_user_id   := public.get_current_user();
@@ -575,12 +583,24 @@ BEGIN
 
   UPDATE public.tickets
   SET status = 'in_progress'::ticket_status, closed_by = v_user_id
-  WHERE id = p_ticket_id;
+  WHERE id = p_ticket_id
+  RETURNING client_id, description
+  INTO v_target_uid, v_ticket_description;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Ticket % not found', p_ticket_id
       USING ERRCODE = 'P0002'; -- 404 Not Found
   END IF;
+
+  -- notify the client the ticket was taken by agent
+  PERFORM public.send_mail(
+    p_targets := ARRAY[v_target_uid],
+    p_subject := 'inprogress_ticket',
+    p_meta    := jsonb_build_object(
+      'ticket_id',    p_ticket_id,
+      'ticket_title', v_ticket_description
+    )
+  );
 
   RETURN TRUE;
 END;
@@ -724,12 +744,14 @@ CREATE POLICY "Participants can insert messages" ON public.messages
       WHERE (
         (t.id = messages.ticket_id) 
         AND (
-          (t.client_id = ( SELECT auth.uid() AS uid)) OR (t.agent_id = ( SELECT auth.uid() AS uid)))))
+          (t.client_id = ( SELECT auth.uid() AS uid)) OR (t.agent_id = ( SELECT auth.uid() AS uid))
         )
         AND (
           t.status != 'closed'::ticket_status
         )
-      );
+      )
+    ))
+  );
 
 CREATE POLICY "Ticket participants can see messages" ON public.messages
   FOR SELECT

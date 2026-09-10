@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-type SubjectType = "claim_ticket" | "close_ticket" | "reopen_ticket";
+type SubjectType = "claim_ticket" | "close_ticket" | "inprogress_ticket";
 
 interface TicketMeta {
   ticket_id?: string;
@@ -61,13 +61,13 @@ const SUBJECT_COPY: Record<
     body: (m) =>
       `${m.ticket_title ? `“${escapeHtml(m.ticket_title)}”` : "Your ticket"} has been marked as resolved. If anything's still off, you can reopen it any time.`,
   },
-  reopen_ticket: {
+  inprogress_ticket: {
     label: "Ticket reopened",
-    heading: "Your ticket is back open",
+    heading: "Your ticket is in progress",
     badge: "Reopened",
     badgeColor: "#5b8def",
     body: (m) =>
-      `${m.ticket_title ? `“${escapeHtml(m.ticket_title)}”` : "Your ticket"} has been reopened and is back in the queue. We're on it.`,
+      `${m.ticket_title ? `“${escapeHtml(m.ticket_title)}”` : "Your ticket"} is in progress. We're on it.`,
   },
 };
 
@@ -239,7 +239,7 @@ async function sendResendMail(destinations: string[], subject: string, html: str
 const SUBJECT_LINES: Record<SubjectType, string> = {
   claim_ticket: "Your ticket has been claimed",
   close_ticket: "Your ticket has been closed",
-  reopen_ticket: "Your ticket has been reopened",
+  inprogress_ticket: "Your ticket has been reopened",
 };
 
 

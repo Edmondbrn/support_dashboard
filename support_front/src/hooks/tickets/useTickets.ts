@@ -1,4 +1,4 @@
-import { claimTicket, closeTicket, deleteTicket, findAssignedTicketsByAgent, findTicketById, findTicketsByClient, findUnassignedTicket } from "@/apis/public";
+import { claimTicket, closeTicket, deleteTicket, findAssignedTicketsByAgent, findTicketById, findTicketsByClient, findUnassignedTicket, inProgressTicket } from "@/apis/public";
 import type { Ticket, TicketById } from "@/apis/types";
 import { useConfirm } from "@/contexts/ConfirmationDialogContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -94,6 +94,17 @@ export default function useTickets() {
         },
     });
 
+    /**
+     * Get the confirmation dialog output and execute the call back
+     * @param ticketId 
+     */
+    async function handleClose(ticketId: string) {
+        const confirmed = await confirm({ content: `Close ticket ?` });
+        if (confirmed) {
+            closeTicketQuery.mutate({ticketId: ticketId})
+        };
+    }
+
     // mutation to claim (assign to himself) an unassigned ticket
     const closeTicketQuery = useMutation({
         mutationFn: ({ ticketId }: { ticketId: string }) => closeTicket(
@@ -114,6 +125,38 @@ export default function useTickets() {
     });
 
 
+
+    /**
+     * Get the confirmation dialog output and execute the call back
+     * @param ticketId 
+     */
+    async function handleInProgress(ticketId: string) {
+        const confirmed = await confirm({ content: `Reopen this ticket ?` });
+        if (confirmed) {
+            inProgressTicketQuery.mutate({ticketId: ticketId})
+        };
+    }
+    
+    // mutation to claim (assign to himself) an unassigned ticket
+    const inProgressTicketQuery = useMutation({
+        mutationFn: ({ ticketId }: { ticketId: string }) => inProgressTicket(
+            ticketId,
+        ),
+        onSuccess: (res, variables) => {
+            if (res.status === "fail") {
+                showErrorToast(`Error, cannot update the ticket status because: ${res.errorMsg}`);
+                return;
+            }
+            queryClient.invalidateQueries({queryKey: conversationKey(user?.id ?? "anon")}) // force the update for the conversation page to show the status
+            queryClient.invalidateQueries({queryKey: getFindTicketByIdKey(variables.ticketId)})
+            showSuccessToast("Ticket re-opened");
+        },
+        onError: (error) => {
+            showErrorToast(`Error, cannot update the ticket status because: ${error.message}`);
+        },
+    });
+
+
     // find a ticket by its id
     const findTicketByIdQuery = (ticketId : string) => {
         return useQuery({
@@ -130,18 +173,6 @@ export default function useTickets() {
                 return res.data as TicketById;
             },
         })
-    }
-
-
-    /**
-     * Get the confirmation dialog output and execute the call back
-     * @param ticketId 
-     */
-    async function handleClose(ticketId: string) {
-        const confirmed = await confirm({ content: `Close ticket ?` });
-        if (confirmed) {
-            closeTicketQuery.mutate({ticketId: ticketId})
-        };
     }
 
     // query to delete a ticket
@@ -187,6 +218,8 @@ export default function useTickets() {
         handleClose,
         isCloseTicketLoading: closeTicketQuery.isPending,
         findTicketById,
-        findTicketByIdQuery
+        findTicketByIdQuery,
+        inProgressTicketMutate: inProgressTicketQuery.mutate ,
+        handleInProgress
     };
 }
