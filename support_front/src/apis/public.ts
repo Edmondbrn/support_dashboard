@@ -88,6 +88,41 @@ export async function findTicketsByClient(
 
 
 /**
+ * Funtion to find a ticket by its id
+ * @param ticketId 
+ * @returns 
+ */
+export async function findTicketById(
+    ticketId: string, 
+) : Promise<ApiCallResponse> {
+
+    const {data, error} = await supabase
+                        .from("tickets")
+                        .select(`
+                            id, 
+                            description,
+                            status, 
+                            priority, 
+                            created_at, 
+                            close_agent:profiles!closed_by (
+                                username
+                            ),
+                            category`
+                        )
+                        .eq("id", ticketId)
+                        .maybeSingle();
+
+    if (error) {
+        console.error("[ERROR] Supabase error for ticket for the id: " + ticketId, error.message);
+        return {status: "fail", errorMsg: error.message, errorCode: error.code};
+    }
+
+    return {status: "success", data: data};
+    
+}
+
+
+/**
  * API to find unassigned ticket to let agent choose one
  * @returns 
  */

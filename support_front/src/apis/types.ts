@@ -55,6 +55,15 @@ export interface Ticket {
     closed_by: string | null;
 }
 
+export interface TicketById {
+    description: string,
+    category: TicketCategory;
+    status: TicketStatus;
+    priority: TicketPriority;
+    created_at: string;
+    close_agent: {"username": string | null};
+}
+
 
 export interface TicketUser {
     agentName: string,

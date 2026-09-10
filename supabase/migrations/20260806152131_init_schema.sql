@@ -24,7 +24,6 @@ COMMENT ON TYPE public.ticket_priority IS 'Priority of a ticket';
 CREATE TYPE public.ticket_status AS ENUM (
   'open',
   'in_progress',
-  'resolved',
   'closed'
 );
 
@@ -726,6 +725,9 @@ CREATE POLICY "Participants can insert messages" ON public.messages
         (t.id = messages.ticket_id) 
         AND (
           (t.client_id = ( SELECT auth.uid() AS uid)) OR (t.agent_id = ( SELECT auth.uid() AS uid)))))
+        )
+        AND (
+          t.status != 'closed'::ticket_status
         )
       );
 

@@ -1,15 +1,19 @@
-import { claimTicket, deleteTicket, findAssignedTicketsByAgent, findTicketsByClient, findUnassignedTicket } from "@/apis/public";
-import type { Ticket } from "@/apis/types";
+import { claimTicket, closeTicket, deleteTicket, findAssignedTicketsByAgent, findTicketById, findTicketsByClient, findUnassignedTicket } from "@/apis/public";
+import type { Ticket, TicketById } from "@/apis/types";
+import { useConfirm } from "@/contexts/ConfirmationDialogContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { conversationKey } from "../messages/useConversations";
 
+export const getFindTicketByIdKey = (ticketId: string) => [ticketId, "find-ticket-by-id"];
 
 
 export default function useTickets() {
 
     const { user } = useAuth();
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
 
     // query to find all the tickets of the current client
     const findClientTicketQuery = useQuery({
@@ -90,6 +94,56 @@ export default function useTickets() {
         },
     });
 
+    // mutation to claim (assign to himself) an unassigned ticket
+    const closeTicketQuery = useMutation({
+        mutationFn: ({ ticketId }: { ticketId: string }) => closeTicket(
+            ticketId,
+        ),
+        onSuccess: (res, variables) => {
+            if (res.status === "fail") {
+                showErrorToast(`Error, cannot closed the ticket because: ${res.errorMsg}`);
+                return;
+            }
+            queryClient.invalidateQueries({queryKey: conversationKey(user?.id ?? "anon")}) // force the update for the conversation page to show the status
+            queryClient.invalidateQueries({queryKey: getFindTicketByIdKey(variables.ticketId)})
+            showSuccessToast("Ticket closed");
+        },
+        onError: (error) => {
+            showErrorToast(`Error, cannot close the ticket because: ${error.message}`);
+        },
+    });
+
+
+    // find a ticket by its id
+    const findTicketByIdQuery = (ticketId : string) => {
+        return useQuery({
+            queryKey: getFindTicketByIdKey(ticketId),
+            staleTime: 60 * 5 * 1000, // 5 minutes
+            queryFn: async (): Promise<TicketById | null> => {
+                const res = await findTicketById(ticketId);
+
+                if (res.status === "fail") {
+                    console.error("[ERROR] Cannot find ticket for id: " + ticketId, res.errorMsg);
+                    return null;
+                }
+    
+                return res.data as TicketById;
+            },
+        })
+    }
+
+
+    /**
+     * Get the confirmation dialog output and execute the call back
+     * @param ticketId 
+     */
+    async function handleClose(ticketId: string) {
+        const confirmed = await confirm({ content: `Close ticket ?` });
+        if (confirmed) {
+            closeTicketQuery.mutate({ticketId: ticketId})
+        };
+    }
+
     // query to delete a ticket
     const deleteTicketQuery = useMutation({
         mutationFn: (ticketId : string) => deleteTicket(
@@ -129,6 +183,10 @@ export default function useTickets() {
         claimingTicketId: claimTicketQuery.variables?.ticketId,
         isDeleteTicketLoading: deleteTicketQuery.isPending,
         deletingTicketId: deleteTicketQuery.variables,
-        deleteTicketQuery: deleteTicketQuery.mutate
+        deleteTicketQuery: deleteTicketQuery.mutate,
+        handleClose,
+        isCloseTicketLoading: closeTicketQuery.isPending,
+        findTicketById,
+        findTicketByIdQuery
     };
 }

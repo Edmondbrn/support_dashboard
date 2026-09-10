@@ -286,7 +286,7 @@ WHERE id = 'a0000000-0000-0000-0000-000000000002';
 UPDATE public.tickets SET created_at = '2026-08-14T11:15:00Z'  WHERE id = 'a0000000-0000-0000-0000-000000000003'; -- open (default)
 
 UPDATE public.tickets
-SET status = 'resolved',
+SET status = 'closed',
     agent_id = '80686b90-fa82-45a3-b9d0-b13807f1bdc5',
     created_at = '2026-07-01T10:00:00Z'
 WHERE id = 'a0000000-0000-0000-0000-000000000004';
