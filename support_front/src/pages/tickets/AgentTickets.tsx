@@ -222,7 +222,7 @@ export default function AgentTickets() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Select value={priorityFilter} onValueChange={(value) => { if (value) setPriorityFilterAgent(value as TicketPriority | "all"); }}>
+                        <Select value={priorityFilterAgent} onValueChange={(value) => { if (value) setPriorityFilterAgent(value as TicketPriority | "all"); }}>
                             <SelectTrigger className="border-white/30 cursor-pointer">
                                 <SelectValue placeholder="All priorities" />
                             </SelectTrigger>
@@ -235,7 +235,7 @@ export default function AgentTickets() {
                             </SelectContent>
                         </Select>
 
-                        <Select value={categoryFilter} onValueChange={(value) => { if (value) setCategoryFilterAgent(value as TicketCategory | "all"); }}>
+                        <Select value={categoryFilterAgent} onValueChange={(value) => { if (value) setCategoryFilterAgent(value as TicketCategory | "all"); }}>
                             <SelectTrigger className="border-white/30 cursor-pointer">
                                 <SelectValue placeholder="All categories" />
                             </SelectTrigger>
@@ -248,7 +248,7 @@ export default function AgentTickets() {
                             </SelectContent>
                         </Select>
 
-                        <Select value={sortOption} onValueChange={(value) => { if (value) setSortOptionAgent(value as SortOption); }}>
+                        <Select value={sortOptionAgent} onValueChange={(value) => { if (value) setSortOptionAgent(value as SortOption); }}>
                             <SelectTrigger className="border-white/30 cursor-pointer">
                                 <SelectValue placeholder="Newest first" />
                             </SelectTrigger>
