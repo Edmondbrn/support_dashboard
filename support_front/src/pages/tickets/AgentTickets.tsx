@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TicketCard from "@/components/tickets/TicketCard";
 import useTickets from "@/hooks/tickets/useTickets";
-import type { Ticket, TicketCategory, TicketPriority } from "@/apis/types";
+import type { Ticket, TicketCategory, TicketPriority, TicketStatus } from "@/apis/types";
 import { useNavigate } from "react-router";
 
 const PRIORITY_FILTERS: { value: TicketPriority | "all"; label: string }[] = [
@@ -30,6 +30,13 @@ const SORT_OPTIONS = [
     { value: "oldest", label: "Oldest first" },
 ] as const;
 
+
+const STATUS_FILTERS: { value: TicketStatus | "all"; label: string }[] = [
+    { value: "all", label: "All categories" },
+    { value: "in_progress", label: "In progress" },
+    { value: "open", label: "Open" },
+    { value: "closed", label: "Closed" },
+]
 type SortOption = (typeof SORT_OPTIONS)[number]["value"];
 
 /**
@@ -53,7 +60,13 @@ export default function AgentTickets() {
 
     const [priorityFilter, setPriorityFilter] = useState<TicketPriority | "all">("all");
     const [categoryFilter, setCategoryFilter] = useState<TicketCategory | "all">("all");
-    const [sortOption, setSortOption] = useState<SortOption>("newest");
+    const [sortOption, setSortOption] =         useState<SortOption>("newest");
+
+
+    const [sortOptionAgent, setSortOptionAgent] =         useState<SortOption>("newest");
+    const [priorityFilterAgent, setPriorityFilterAgent] = useState<TicketPriority | "all">("all");
+    const [categoryFilterAgent, setCategoryFilterAgent] = useState<TicketCategory | "all">("all");
+    const [statusFilterAgent, setStatusFilterAgent] =     useState<TicketStatus | "all">("all");
 
     const filteredUnassignedTickets = useMemo(() => {
         // filter by category and by priority
@@ -68,6 +81,22 @@ export default function AgentTickets() {
                 : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
     }, [unassignedTickets, priorityFilter, categoryFilter, sortOption]);
+
+
+    const filteredAssignedTickets = useMemo(() => {
+        // filter by category and by priority
+        const filtered = agentTickets.filter((ticket) =>
+            (statusFilterAgent === "all" ||  ticket.status === statusFilterAgent) &&
+            (categoryFilterAgent === "all" || ticket.category === categoryFilterAgent) &&
+            (priorityFilterAgent === "all" || ticket.priority === priorityFilterAgent)
+        );
+        // apply the creation date filter
+        return filtered.sort((a, b) =>
+            sortOptionAgent === "newest"
+                ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+    }, [agentTickets, priorityFilter, categoryFilterAgent, sortOptionAgent, statusFilterAgent]);
 
     return (
         <div className="flex flex-col items-center justify-center gap-5 py-20 text-center">
@@ -179,6 +208,59 @@ export default function AgentTickets() {
 
                 {/* Assigned tickets to the current agent */}
                 <TabsContent value="assigned" className="flex w-full flex-col items-center gap-5">
+                    {/* Filter section */}
+                    <div className="flex w-full flex-wrap items-center justify-center gap-3">
+                        <Select value={statusFilterAgent} onValueChange={(value) => { if (value) setStatusFilterAgent(value as TicketStatus); }}>
+                            <SelectTrigger className="border-white/30 cursor-pointer">
+                                <SelectValue placeholder="Newest first" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {STATUS_FILTERS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select value={priorityFilter} onValueChange={(value) => { if (value) setPriorityFilterAgent(value as TicketPriority | "all"); }}>
+                            <SelectTrigger className="border-white/30 cursor-pointer">
+                                <SelectValue placeholder="All priorities" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {PRIORITY_FILTERS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={categoryFilter} onValueChange={(value) => { if (value) setCategoryFilterAgent(value as TicketCategory | "all"); }}>
+                            <SelectTrigger className="border-white/30 cursor-pointer">
+                                <SelectValue placeholder="All categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {CATEGORY_FILTERS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={sortOption} onValueChange={(value) => { if (value) setSortOptionAgent(value as SortOption); }}>
+                            <SelectTrigger className="border-white/30 cursor-pointer">
+                                <SelectValue placeholder="Newest first" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {SORT_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     {
                         isAgentTicketLoading && <Spinner className="mt-10 size-8 text-white" />
                     }
@@ -192,18 +274,18 @@ export default function AgentTickets() {
                     }
 
                     {
-                        !isAgentTicketLoading && !isAgentTicketError && agentTickets.length === 0 && (
+                        !isAgentTicketLoading && !isAgentTicketError && filteredAssignedTickets.length === 0 && (
                             <div className="flex flex-col items-center gap-2 py-10 text-slate-400">
                                 <Inbox className="size-8" />
-                                <span>You have no assigned tickets yet</span>
+                                <span>No ticket matchs your filters</span>
                             </div>
                         )
                     }
 
                     {
-                        !isAgentTicketLoading && !isAgentTicketError && agentTickets.length > 0 && (
+                        !isAgentTicketLoading && !isAgentTicketError && filteredAssignedTickets.length > 0 && (
                             <ul className="grid w-full list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 md:grid-cols-3">
-                                {agentTickets.map((ticket: Ticket) => (
+                                {filteredAssignedTickets.map((ticket: Ticket) => (
                                     <li key={ticket.id}>
                                         <TicketCard
                                             showClaim={false}

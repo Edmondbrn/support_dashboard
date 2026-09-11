@@ -145,3 +145,4 @@ vite.config.ts.timestamp-*
 # Personal docs / tutorials
 docs/
 snippets/
+AGENTS.md
