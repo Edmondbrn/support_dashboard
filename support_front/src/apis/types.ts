@@ -88,3 +88,25 @@ export interface TicketUnreadData {
     ticket_id: string,
     unread_count: number
 }
+
+export interface AdminTicket {
+    id: string;
+    description: string;
+    created_at: string;
+    status: TicketStatus;
+    priority: TicketPriority;
+    category: TicketCategory;
+    agent_id: string | null;
+    client: { username: string } | null;
+    agent: { id: string; username: string } | null;
+}
+
+export interface AgentOption {
+    id: string;
+    username: string;
+}
+
+export interface AgentStats {
+    count: number,
+    status: TicketStatus
+}

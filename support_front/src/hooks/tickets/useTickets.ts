@@ -9,6 +9,26 @@ import { conversationKey } from "../messages/useConversations";
 export const getFindTicketByIdKey = (ticketId: string) => [ticketId, "find-ticket-by-id"];
 export const getFindAssignedTicketKey = (userId : string) => ["agent", userId, "find-assigned-tickets"]
 
+/**
+ * Find a ticket by its id.
+ */
+export function useFindTicketById(ticketId: string) {
+    return useQuery({
+        queryKey: getFindTicketByIdKey(ticketId),
+        staleTime: 60 * 5 * 1000, // 5 minutes
+        queryFn: async (): Promise<TicketById | null> => {
+            const res = await findTicketById(ticketId);
+
+            if (res.status === "fail") {
+                console.error("[ERROR] Cannot find ticket for id: " + ticketId, res.errorMsg);
+                return null;
+            }
+
+            return res.data as TicketById;
+        },
+    });
+}
+
 export default function useTickets() {
 
     const { user } = useAuth();
@@ -159,23 +179,8 @@ export default function useTickets() {
     });
 
 
-    // find a ticket by its id
-    const findTicketByIdQuery = (ticketId : string) => {
-        return useQuery({
-            queryKey: getFindTicketByIdKey(ticketId),
-            staleTime: 60 * 5 * 1000, // 5 minutes
-            queryFn: async (): Promise<TicketById | null> => {
-                const res = await findTicketById(ticketId);
-
-                if (res.status === "fail") {
-                    console.error("[ERROR] Cannot find ticket for id: " + ticketId, res.errorMsg);
-                    return null;
-                }
-    
-                return res.data as TicketById;
-            },
-        })
-    }
+    // find a ticket by its id (alias kept for existing call sites)
+    const findTicketByIdQuery = useFindTicketById;
 
     // query to delete a ticket
     const deleteTicketQuery = useMutation({

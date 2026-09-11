@@ -9,6 +9,7 @@ import {
     LayoutDashboard,
     LogOut,
     MessageSquare,
+    ShieldCheck,
     Ticket,
     TicketPlus
 } from "lucide-react";
@@ -42,6 +43,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     admin: [
         { label: "Dashboard", to: appRoutes.HOME, icon: LayoutDashboard },
         { label: "Tickets", to: appRoutes.TICKETS, icon: Ticket },
+        { label: "All tickets", to: appRoutes.ADMIN_TICKETS, icon: ShieldCheck },
         { label: "Messages", to: appRoutes.MESSAGES, icon: MessageSquare }
     ]
 };

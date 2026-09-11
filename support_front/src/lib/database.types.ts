@@ -237,6 +237,13 @@ export type Database = {
           username: string
         }[]
       }
+      get_agent_ticket_stat: {
+        Args: { v_agent_id: string }
+        Returns: {
+          count: number
+          status: Database["public"]["Enums"]["ticket_status"]
+        }[]
+      }
       get_current_user: { Args: never; Returns: string }
       get_role: { Args: never; Returns: string }
       get_unread_counts: {
