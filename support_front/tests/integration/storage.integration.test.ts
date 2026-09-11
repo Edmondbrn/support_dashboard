@@ -35,7 +35,6 @@ let otherAgent: TestUserFixture | undefined;
 
 const strangerEmail = makeTestEmail();
 const strangerPassword = "P@ssw0rd4";
-let stranger: TestUserFixture | undefined;
 
 const trackedEmails: string[] = [];
 const uploadedPaths: string[] = [];
@@ -73,7 +72,7 @@ beforeAll(async () => {
     client = await createTestUser({ email: clientEmail, password: clientPassword });
     agent = await createTestUser({ email: agentEmail, password: agentPassword });
     otherAgent = await createTestUser({ email: otherAgentEmail, password: otherAgentPassword });
-    stranger = await createTestUser({ email: strangerEmail, password: strangerPassword });
+    await createTestUser({ email: strangerEmail, password: strangerPassword });
     await adminClient.from("profiles").update({ role: "agent" }).eq("id", agent!.userId);
     await adminClient.from("profiles").update({ role: "agent" }).eq("id", otherAgent!.userId);
     track(clientEmail);

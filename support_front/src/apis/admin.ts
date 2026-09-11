@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { AgentStats, ApiCallResponse } from "./types";
+import type { ApiCallResponse } from "./types";
 
 /**
  * Admin: fetch every ticket with creator + assigned agent.

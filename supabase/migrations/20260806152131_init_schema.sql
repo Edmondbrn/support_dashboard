@@ -744,7 +744,9 @@ CREATE POLICY "Participants can insert messages" ON public.messages
       WHERE (
         (t.id = messages.ticket_id) 
         AND (
-          (t.client_id = ( SELECT auth.uid() AS uid)) OR (t.agent_id = ( SELECT auth.uid() AS uid))
+          (t.client_id = ( SELECT auth.uid() AS uid)) 
+          OR (t.agent_id = ( SELECT auth.uid() AS uid))
+          OR (public.get_role() = 'admin')
         )
         AND (
           t.status != 'closed'::ticket_status
@@ -764,9 +766,11 @@ CREATE POLICY "Ticket participants can see messages" ON public.messages
         AND (
           (t.client_id = ( SELECT auth.uid() AS uid)) 
           OR (t.agent_id = ( SELECT auth.uid() AS uid)) 
-          OR (public.get_role() = 'admin'))))
+          OR (public.get_role() = 'admin')
         )
-    );
+      )
+    ))
+  );
 
 
 CREATE POLICY "Agent sees assigned and unassigned tickets" ON public.tickets

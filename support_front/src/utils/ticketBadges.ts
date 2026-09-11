@@ -52,8 +52,6 @@ export function getStatusBadgeVariant(status: TicketStatus) {
             return "bg-emerald-500 text-white"
         case "in_progress":
             return "bg-yellow-500 text-black"
-        case "resolved":
-            return "bg-blue-600 text-white"
         case "closed":
         default:
             return "bg-gray-400 text-gray-950"
