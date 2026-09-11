@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { conversationKey } from "../messages/useConversations";
 
 export const getFindTicketByIdKey = (ticketId: string) => [ticketId, "find-ticket-by-id"];
-
+export const getFindAssignedTicketKey = (userId : string) => ["agent", userId, "find-assigned-tickets"]
 
 export default function useTickets() {
 
@@ -56,7 +56,7 @@ export default function useTickets() {
 
     // query to find the tickets assigned to the current agent
     const findAssignedTicketQuery = useQuery({
-        queryKey: [{"agent": user?.id, "action": "find-assigned-tickets"}],
+        queryKey: getFindAssignedTicketKey(user?.id ?? "anon"),
         staleTime: 60 * 5 * 1000, // 5 minutes
         queryFn: async (): Promise<Ticket[]> => {
             if (!user) {
@@ -116,7 +116,8 @@ export default function useTickets() {
                 return;
             }
             queryClient.invalidateQueries({queryKey: conversationKey(user?.id ?? "anon")}) // force the update for the conversation page to show the status
-            queryClient.invalidateQueries({queryKey: getFindTicketByIdKey(variables.ticketId)})
+            queryClient.invalidateQueries({queryKey: getFindTicketByIdKey(variables.ticketId)}) // force to reload the message status
+            queryClient.invalidateQueries({queryKey: getFindAssignedTicketKey(user?.id ?? "anon")}) // force to reload ticket queue for status
             showSuccessToast("Ticket closed");
         },
         onError: (error) => {
@@ -149,6 +150,7 @@ export default function useTickets() {
             }
             queryClient.invalidateQueries({queryKey: conversationKey(user?.id ?? "anon")}) // force the update for the conversation page to show the status
             queryClient.invalidateQueries({queryKey: getFindTicketByIdKey(variables.ticketId)})
+            queryClient.invalidateQueries({queryKey: getFindAssignedTicketKey(user?.id ?? "anon")}) // force to reload ticket queue for status
             showSuccessToast("Ticket re-opened");
         },
         onError: (error) => {

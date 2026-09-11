@@ -164,6 +164,7 @@ export default function AgentTickets() {
                                 {filteredUnassignedTickets.map((ticket: Ticket) => (
                                     <li key={ticket.id}>
                                         <TicketCard
+                                            showClaim={true}
                                             ticket={ticket}
                                             onClaimTicket={() => claimTicket({ticketId: ticket.id})}
                                             isClaimTicketLoading={isClaimTicketLoading}
@@ -205,6 +206,7 @@ export default function AgentTickets() {
                                 {agentTickets.map((ticket: Ticket) => (
                                     <li key={ticket.id}>
                                         <TicketCard
+                                            showClaim={false}
                                             ticket={ticket}
                                             showStatus
                                             showAgent
