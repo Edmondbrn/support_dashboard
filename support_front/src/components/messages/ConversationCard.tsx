@@ -44,7 +44,7 @@ function ConversationCardImpl({
         >
             <Card className={twJoin("bg-glass text-white border-l-4", accent)}>
                 <CardContent className="flex flex-col gap-3 p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-3">
 
                     <div className="flex min-w-0 items-center gap-3">
                         <div className="relative shrink-0">
@@ -65,35 +65,37 @@ function ConversationCardImpl({
                     </div>
 
                     <div className="flex flex-col md:flex-row md:justify-center gap-2">
-                    <Badge className={twJoin("capitalize", getStatusBadgeVariant(conversation.status))}>
-                        {conversation.status}
-                    </Badge>
-                    <Badge className={twJoin("capitalize", getCategoryBadgeVariant(conversation.category))}>
-                        {conversation.category}
-                    </Badge>
+                        <Badge className={twJoin("capitalize", getStatusBadgeVariant(conversation.status))}>
+                            {conversation.status}
+                        </Badge>
+                        <Badge className={twJoin("capitalize", getCategoryBadgeVariant(conversation.category))}>
+                            {conversation.category}
+                        </Badge>
                     </div>
                     
                 </div>
 
                 {/* Description + priority */}
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col md:flex-row items-center md:items-start md:justify-between gap-3">
                     <p className="line-clamp-2 text-sm text-gray-200">{conversation.description}</p>
                     <Badge
-                    className={twJoin("capitalize", getPriorityBadgeVariant(conversation.priority))}
+                        className={twJoin("capitalize", getPriorityBadgeVariant(conversation.priority))}
                     >
-                    {conversation.priority}
+                        {conversation.priority}
                     </Badge>
                 </div>
 
                 {/* Last message preview */}
                 {conversation.last_message_content && (
-                    <div className="flex items-center gap-2 border-t border-white/10 pt-2 text-sm text-gray-300">
-                    <MessageSquareIcon className="size-4 text-orange-400" />
-                    <span className="italic text-gray-400">{conversation.last_message_username}:</span>
-                    <span className="truncate">{conversation.last_message_content}</span>
-                    <time className="ml-auto text-xs text-gray-500">
-                        {timeStampToDate(conversation.last_message_at ?? "")}
-                    </time>
+                    <div className="flex flex-col md:flex-row items-center gap-2 border-t border-white/10 pt-2 text-sm text-gray-300">
+                        <div className="flex items-center gap-2">
+                            <MessageSquareIcon className="size-4 text-orange-400" />
+                            <span className="italic text-gray-400">{conversation.last_message_username}:</span>
+                        </div>
+                        <span className="truncate" title={conversation.last_message_content}>{conversation.last_message_content}</span>
+                        <time className="ml-auto text-xs text-gray-500">
+                            {timeStampToDate(conversation.last_message_at ?? "")}
+                        </time>
                     </div>
                 )}
                 </CardContent>

@@ -58,7 +58,7 @@ export default function MessageList() {
     }
 
     return (
-        <div className="flex flex-col gap-4 px-20 py-5">
+        <div className="flex flex-col gap-4 px-5 md:px-20 py-5">
         {conversations.map((conv) => (
             <ConversationCard
                 key={conv.id}

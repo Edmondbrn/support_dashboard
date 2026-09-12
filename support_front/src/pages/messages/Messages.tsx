@@ -197,7 +197,7 @@ export default function Messages() {
                             </div>
                         : (
                             <>
-                                <div className="flex flex-col items-center justify-center gap-2 py-20">
+                                <div className="grow flex flex-col items-center justify-center gap-2 py-20">
                                     <InboxIcon className="size-10 text-orange-300" />
                                     <h2 className="text-lg font-medium text-white">No messages yet</h2>
                                     <p className="text-sm text-slate-400">Send the first message to start the conversation</p>
@@ -258,7 +258,7 @@ export default function Messages() {
 
             {/* messages */}
             <div ref={listRef}
-                className="flex flex-col px-10 py-10
+                className="grow flex flex-col px-10 py-10
                         overflow-y-auto scrollbar-thin scrollbar-thumb-orange-300"
             >
                 {messages.map((m) => (
