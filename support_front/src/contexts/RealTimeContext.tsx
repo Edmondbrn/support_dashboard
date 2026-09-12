@@ -126,12 +126,16 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                         openTicketIdRef.current === row.ticket_id && onMessagesPageRef.current;
                     
                     // patch the message list
+                    const senderProfile = (await findProfile(row.sender_id)).data;
                     queryClient.setQueryData<ChatMessage[]>(
                         ticketMessagesKey(row.ticket_id),
                         (old) => {
                             if (!old) return old;
                             if (old.some((m) => m.id === row.id)) return old;
-                            return [...old, row]; // add the new message to the list
+                            return [
+                                ...old, 
+                                {...row, sender: senderProfile ? {username: senderProfile.username} : null}
+                            ]; // add the new message to the list
                         }
                     );
 
