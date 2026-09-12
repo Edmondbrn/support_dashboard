@@ -348,7 +348,7 @@ BEGIN
   v_is_new_agent_valid := EXISTS(
     SELECT 1
     FROM public.profiles AS p
-    WHERE p.id = p_new_agent_id AND p.role = 'agent'::public.roles
+    WHERE p.id = p_new_agent_id AND p.role IN ('agent'::public.roles, 'admin'::public.roles)
   );
 
   IF NOT v_is_new_agent_valid THEN

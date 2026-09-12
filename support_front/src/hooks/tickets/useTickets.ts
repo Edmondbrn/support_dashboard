@@ -12,13 +12,15 @@ export const getFindUnssignedTicketKey = () => ["find-unassigned-tickets"]
 
 /**
  * Find a ticket by its id.
+ * Accepts undefined so callers can hoist the hook above early returns (Rules of Hooks).
  */
-export function useFindTicketById(ticketId: string) {
+export function useFindTicketById(ticketId: string | undefined) {
     return useQuery({
-        queryKey: getFindTicketByIdKey(ticketId),
+        queryKey: getFindTicketByIdKey(ticketId ?? "none"),
+        enabled: Boolean(ticketId),
         staleTime: 60 * 5 * 1000, // 5 minutes
         queryFn: async (): Promise<TicketById | null> => {
-            const res = await findTicketById(ticketId);
+            const res = await findTicketById(ticketId as string);
 
             if (res.status === "fail") {
                 console.error("[ERROR] Cannot find ticket for id: " + ticketId, res.errorMsg);

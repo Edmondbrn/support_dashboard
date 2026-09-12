@@ -70,9 +70,10 @@ export function useTickeUsersQuery(ticketId: string | undefined) {
                 return null;
             }
 
-            const ticketUsers = res.data as {agent: {username: string}, client: {username: string}}
+            const ticketUsers = res.data as {agent: {username: string} | null, client: {username: string}}
             return {
-                agentName: ticketUsers.agent.username,
+                // agent is null until the ticket is claimed/assigned
+                agentName: ticketUsers.agent?.username ?? null,
                 clientName: ticketUsers.client.username,
             }
         },

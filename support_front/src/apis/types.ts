@@ -66,7 +66,7 @@ export interface TicketById {
 
 
 export interface TicketUser {
-    agentName: string,
+    agentName: string | null,
     clientName: string
 }
 
@@ -105,6 +105,7 @@ export interface AdminTicket {
 export interface AgentOption {
     id: string;
     username: string;
+    role?: UserRole;
 }
 
 export interface AgentStats {

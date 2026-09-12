@@ -132,7 +132,14 @@ export default function AgentCell({ ticket, pending, onSelect }: AgentCellProps)
                                             }}
                                             className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs text-slate-200 hover:bg-white/10"
                                         >
-                                            <span className="truncate">{option.username}</span>
+                                            <span className="flex min-w-0 items-center gap-1.5">
+                                                <span className="truncate">{option.username}</span>
+                                                {option.role === "admin" && (
+                                                    <span className="shrink-0 rounded bg-orange-400/20 px-1 py-px text-[10px] font-medium text-orange-200">
+                                                        admin
+                                                    </span>
+                                                )}
+                                            </span>
                                             {(pending?.id === option.id || (!pending && currentAgent?.id === option.id)) && (
                                                 <Check className="size-3 shrink-0 text-orange-300" />
                                             )}

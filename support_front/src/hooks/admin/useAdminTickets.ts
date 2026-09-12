@@ -76,9 +76,10 @@ export default function useAdminTickets() {
     });
 
     function setPendingAssignment(ticketId: string, option: AgentOption, currentAgentId: string | null) {
-        // drop the entry if the admin re-selects the original agent or the same new agent twice
-        const isCancelOption = Object.values(pendingAssignments).some((agentOption) => agentOption.id === option.id)
-        if (option.id === currentAgentId || isCancelOption) {
+        // drop the entry if the admin re-selects the original agent or toggles the same staged agent for this ticket.
+        const stagedForTicket = pendingAssignments[ticketId];
+        const isToggleOff = stagedForTicket?.id === option.id;
+        if (option.id === currentAgentId || isToggleOff) {
             setPendingAssignments((prev) => {
                 if (!(ticketId in prev)) return prev;
                 const next = { ...prev };

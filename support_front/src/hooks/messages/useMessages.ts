@@ -46,14 +46,21 @@ export default function useMessages() {
         profile?.username,
     );
 
+    const isUnassigned = Boolean(ticketId) && Boolean(ticketUsers) && ticketUsers!.agentName == null;
+
     // compute user online status for the current conversation
     const counterpartOnline = useMemo(() => {
         if (!ticketUsers) {
             return {}
         }
 
-        const counterPartName = ticketUsers.agentName !== profile?.username 
-            ? ticketUsers.agentName 
+        // unassigned: no counterpart yet
+        if (ticketUsers.agentName == null) {
+            return {}
+        }
+
+        const counterPartName = ticketUsers.agentName !== profile?.username
+            ? ticketUsers.agentName
             : ticketUsers.clientName;
 
         return {
@@ -216,6 +223,8 @@ export default function useMessages() {
         ticketId,
         draft,
         counterpartOnline,
+        ticketUsers,
+        isUnassigned,
         isTyping,
         isTicketUserLoading,
         isMessagesLoading,

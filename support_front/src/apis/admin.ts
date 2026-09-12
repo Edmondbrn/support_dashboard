@@ -37,8 +37,8 @@ export async function searchAgents(query: string, limit = 20): Promise<ApiCallRe
     const trimmed = query.trim();
     let builder = supabase
         .from("profiles")
-        .select("id, username")
-        .eq("role", "agent")
+        .select("id, username, role")
+        .in("role", ["agent", "admin"])
         .order("username", { ascending: true })
         .limit(limit);
 

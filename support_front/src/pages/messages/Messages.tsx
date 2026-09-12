@@ -22,6 +22,8 @@ export default function Messages() {
     const {
         ticketId,
         counterpartOnline,
+        ticketUsers,
+        isUnassigned,
         isTyping,
         isMessagesLoading,
         isTicketUserLoading,
@@ -34,11 +36,14 @@ export default function Messages() {
         handleClose,
         isCloseTicketLoading,
         findTicketByIdQuery,
-        handleInProgress
+        handleInProgress,
+        claimTicket,
+        isClaimTicketLoading,
     } = useTickets();
 
     const navigate = useNavigate();
-    
+
+    const { data: ticket, isLoading: isTicketLoading } = findTicketByIdQuery(ticketId);
 
     function agentActionBtn(ticketId : string, ticket : TicketById) {
         if (!profile || profile.role === "client") {
@@ -46,16 +51,16 @@ export default function Messages() {
         }
 
         if (ticket.status === "closed") {
-            return <Btn 
-                version="secondary" 
+            return <Btn
+                version="secondary"
                 onClick={() => handleInProgress(ticketId)}
                 isLoading={isCloseTicketLoading}
             >
                 Reopen ticket
             </Btn>
         } else {
-           return  <Btn 
-                version="secondary" 
+           return  <Btn
+                version="secondary"
                 onClick={() => handleClose(ticketId)}
                 isLoading={isCloseTicketLoading}
             >
@@ -72,16 +77,87 @@ export default function Messages() {
             </div>
         )
     }
-    
+
+    function ticketMetadata(ticket: TicketById) {
+        return (
+            <div className="flex flex-col items-start">
+                <span className="font-semibold">{`Description: `}</span>
+                <span className="line-clamp-3 pl-3" title={ticket.description}>{ticket.description}</span>
+                <div className="w-full flex justify-between py-2">
+                    <div className="flex gap-2">
+                        <Badge className={twJoin("capitalize", getStatusBadgeVariant(ticket.status))}>
+                            {ticket.status}
+                        </Badge>
+                        <Badge className={twJoin("capitalize", getCategoryBadgeVariant(ticket.category))}>
+                            {ticket.category}
+                        </Badge>
+                    </div>
+                    <Badge className={twJoin("capitalize", getPriorityBadgeVariant(ticket.priority))}>
+                        {ticket.priority}
+                    </Badge>
+                </div>
+            </div>
+        );
+    }
+
+    // Base page when a ticket exists but no agent is assigned yet.
+    // Uses the existing empty-state layout. Sending is blocked for every role
+    // until the ticket is claimed/assigned.
+    function unassignedTicketSection(ticketId: string, ticket: TicketById) {
+        const role = profile?.role;
+        return (
+            <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col gap-2 px-10 py-5">
+                <button className="cursor-pointer self-start" onClick={() => navigate(appRoutes.MESSAGES)}>
+                    <ArrowLeft className="rounded-2xl border-2 border-gray-400 p-1" size={32} />
+                </button>
+                {ticketMetadata(ticket)}
+                <div className="flex flex-col items-center justify-center gap-2 py-20">
+                    <InboxIcon className="size-10 text-orange-300" />
+                    <h2 className="text-lg font-medium text-white">No agent assigned yet</h2>
+                    <p className="text-sm text-slate-400">
+                        {role === "client"
+                            ? "Your ticket is waiting. An agent will pick it up soon. You cannot send messages until then."
+                            : "This ticket has no agent. Claim it to start the conversation. Messages are disabled until then."}
+                    </p>
+                    {role === "agent" || role === "admin" ? (
+                        <div className="flex items-center gap-2 pt-2">
+                            <Btn
+                                version="secondary"
+                                onClick={() => claimTicket({ ticketId })}
+                                isLoading={isClaimTicketLoading}
+                            >
+                                Claim ticket
+                            </Btn>
+                            {role === "admin" && (
+                                <Btn
+                                    version="primary"
+                                    onClick={() => navigate(appRoutes.ADMIN_TICKETS)}
+                                >
+                                    Manage in admin
+                                </Btn>
+                            )}
+                        </div>
+                    ) : null}
+                </div>
+            </div>
+        );
+    }
+
+    function backButton() {
+        return (
+            <button className="cursor-pointer" onClick={() => navigate(appRoutes.MESSAGES)}>
+                <ArrowLeft className="rounded-2xl border-2 border-gray-400 p-1" size={32}/>
+            </button>
+        )
+    }
+
     // State: No ticket selected (base /messages route)
     if (!ticketId) {
         return <MessageList />;
     }
 
-    const { data: ticket, isLoading: isTicketLoading } = findTicketByIdQuery(ticketId);
-
     // State: Loading messages
-    if (isMessagesLoading || isTicketLoading) {
+    if (isMessagesLoading || isTicketLoading || isTicketUserLoading) {
         return (
             <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col items-center justify-center bg-navy-gradient">
                 <Spinner className="size-8 text-white" />
@@ -95,8 +171,14 @@ export default function Messages() {
                 <InboxIcon className="size-10 text-orange-300" />
                 <h2 className="text-lg font-medium text-white">Ticket not found</h2>
                 <p className="text-sm text-slate-400">The given identifier does not correspond to any ticket</p>
+                {backButton()}
             </div>
         )
+    }
+
+    const showUnassigned = isUnassigned || ticketUsers?.agentName == null;
+    if (showUnassigned) {
+        return unassignedTicketSection(ticketId, ticket);
     }
 
     // State: Error (no messages loaded)
@@ -104,6 +186,8 @@ export default function Messages() {
         return (
             <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col px-10 py-5">
                 {/* Empty state header */}
+                {backButton()}
+                {ticketMetadata(ticket)}
                 {
                     ticket.status === "closed"
                         ?
@@ -131,9 +215,7 @@ export default function Messages() {
     return (
         <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col gap-2 px-10 py-5">
             {/* header: conversation partner + online status */}
-            <button className="cursor-pointer" onClick={() => navigate(appRoutes.MESSAGES)}>
-                <ArrowLeft className="rounded-2xl border-2 border-gray-400 p-1" size={32}/>
-            </button>
+            {backButton()}
             {
                 isTicketUserLoading
                  ? <Spinner className="size-8 text-white"/>
@@ -152,8 +234,8 @@ export default function Messages() {
                                         {username}
                                     </span>
                                 </div>
-                                
-                                
+
+
                                 <div className="flex flex-col md:flex-row items-center gap-2">
                                     {agentActionBtn(ticketId, ticket)}
                                     {isTyping && (
@@ -164,35 +246,19 @@ export default function Messages() {
                                 </div>
                             </div>
                             {/* ticket metadata */}
-                            <div className="flex flex-col items-start">
-                                <span className="font-semibold">{`Description: `}</span>
-                                <span className="line-clamp-3 pl-3" title={ticket.description}>{ticket.description}</span>
-                                <div className="w-full flex justify-between py-2">
-                                    <div className="flex gap-2">
-                                        <Badge className={twJoin("capitalize", getStatusBadgeVariant(ticket.status))}>
-                                            {ticket.status}
-                                        </Badge>
-                                        <Badge className={twJoin("capitalize", getCategoryBadgeVariant(ticket.category))}>
-                                            {ticket.category}
-                                        </Badge>
-                                    </div>
-                                    <Badge className={twJoin("capitalize", getPriorityBadgeVariant(ticket.priority))}>
-                                        {ticket.priority}
-                                    </Badge>
-                                </div>
-                            </div>
+                            {ticketMetadata(ticket)}
 
-                            { ticket.status === "closed" && 
+                            { ticket.status === "closed" &&
                                 closedTicketSection(ticket)
                             }
                         </div>
                     )
                 })
             }
-            
+
             {/* messages */}
-            <div ref={listRef} 
-                className="flex flex-col px-10 py-10 
+            <div ref={listRef}
+                className="flex flex-col px-10 py-10
                         overflow-y-auto scrollbar-thin scrollbar-thumb-orange-300"
             >
                 {messages.map((m) => (
@@ -214,7 +280,7 @@ export default function Messages() {
                     </span>
                 )}
             </div>
-            
+
 
             { ticket.status !== "closed" && <MessageInput />}
         </div>
