@@ -1,4 +1,4 @@
-import type { MessageRow, TicketUnreadData, UserConversation } from "@/apis/types";
+import type { MessageRow, Profile, TicketUnreadData, UserConversation } from "@/apis/types";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { useMatch, useNavigate } from "react-router";
@@ -22,6 +22,25 @@ interface RealtimeContextValue {
 }
 
 const RealtimeContext = createContext<RealtimeContextValue | undefined>(undefined);
+
+const profileCache: Record<string, Profile> = {};
+
+/**
+ * Load the profile in a local cache to avoid refetching every time
+ * @param senderId 
+ * @returns 
+ */
+const loadProfileById = async (senderId : string) => {
+    if (profileCache[senderId]) {
+        return profileCache[senderId]
+    }
+    const dbProfile = (await findProfile(senderId)).data;
+    // cache profile for next realtime updates
+    if (dbProfile) {
+        profileCache[senderId] = dbProfile;
+    }
+    return dbProfile;
+}
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
 
@@ -102,6 +121,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         });
     }, [user]);
 
+
     // Single global channel: postgres_changes on the messages table.
     // Instead of refetching a ticket's message list on every insert (expensive,
     // and unnecessary), we patch the react-query cache for that ticket directly.
@@ -126,7 +146,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                         openTicketIdRef.current === row.ticket_id && onMessagesPageRef.current;
                     
                     // patch the message list
-                    const senderProfile = (await findProfile(row.sender_id)).data;
+                    const senderProfile = await loadProfileById(row.sender_id);
                     queryClient.setQueryData<ChatMessage[]>(
                         ticketMessagesKey(row.ticket_id),
                         (old) => {
@@ -192,7 +212,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                             ...prev,
                             [row.ticket_id]: (prev[row.ticket_id] ?? 0) + 1,
                         }));
-                        const senderProfile = (await findProfile(row.sender_id)).data;
+                        const senderProfile = await loadProfileById(row.sender_id);
                         showMessageToast(
                             senderProfile,
                             row.content ?? "",
