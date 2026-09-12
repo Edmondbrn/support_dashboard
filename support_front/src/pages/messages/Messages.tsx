@@ -139,7 +139,7 @@ export default function Messages() {
                  ? <Spinner className="size-8 text-white"/>
                  : Object.entries(counterpartOnline).map(([username, isOnline]) => {
                     return (
-                        <div className="border-b border-white/10 pb-3">
+                        <div key={`${username}-${isOnline}`} className="border-b border-white/10 pb-3">
                             {/* client and agent action button */}
                             <div key={`onlineStatus-${username}`} className="flex justify-between gap-2">
                                 <div className="flex items-center gap-2">
@@ -196,9 +196,8 @@ export default function Messages() {
                         overflow-y-auto scrollbar-thin scrollbar-thumb-orange-300"
             >
                 {messages.map((m) => (
-                    <div className="pb-3">
+                    <div key={m.id} className="pb-3">
                         <MessageCard
-                            key={m.id}
                             sentAt={formatDate(m.created_at)}
                             senderName={m.sender?.username ?? "unknown"}
                             senderRole={m.sender?.role}

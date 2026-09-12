@@ -174,11 +174,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                                 const flat = old.pages.flat();
                                 const existing = flat.find((c) => c.id === row.ticket_id);
                                 if (!existing) return old; // safe guard, should be included if the set returns true
-
+                                
                                 const updated: UserConversation = {
                                     ...existing,
                                     last_message_content: row.content,
                                     last_message_at: row.created_at,
+                                    last_message_username: senderProfile?.username ?? "anonymous"
                                 };
                                 // remove the conversation from pages
                                 const pages = old.pages.map((page) =>
@@ -212,7 +213,6 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                             ...prev,
                             [row.ticket_id]: (prev[row.ticket_id] ?? 0) + 1,
                         }));
-                        const senderProfile = await loadProfileById(row.sender_id);
                         showMessageToast(
                             senderProfile,
                             row.content ?? "",

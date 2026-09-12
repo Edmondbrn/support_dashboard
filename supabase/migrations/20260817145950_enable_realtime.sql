@@ -36,7 +36,8 @@ RETURNS TABLE (
     other_user_id uuid,
     username text,
     last_message_content text,
-    last_message_at timestamptz
+    last_message_at timestamptz,
+    last_message_username text
 )
 LANGUAGE plpgsql
 SECURITY INVOKER
@@ -52,8 +53,10 @@ BEGIN
         SELECT DISTINCT ON (ticket_id)
             m.ticket_id,
             m.content,
-            m.created_at
+            m.created_at,
+            p.username
         FROM public.messages AS m
+        JOIN public.profiles AS p ON m.sender_id = p.id
         ORDER BY ticket_id, created_at DESC
     )
     SELECT 
@@ -66,7 +69,8 @@ BEGIN
         CASE WHEN t.agent_id = v_user_id THEN t.client_id ELSE t.agent_id END AS other_user_id,
         p.username,
         lm.content AS last_message_content,
-        lm.created_at AS last_message_at
+        lm.created_at AS last_message_at,
+        lm.username AS last_message_username
     FROM public.tickets AS t
     JOIN public.profiles AS p
         ON p.id = CASE WHEN t.agent_id = v_user_id THEN t.client_id ELSE t.agent_id END
