@@ -7,7 +7,6 @@ import { useRealtime } from "@/contexts/RealTimeContext";
 import { deleteAttachment, sendMessage, uploadAttachment } from "@/apis/messages";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AttachmentMeta, MessageRow } from "@/apis/types";
-import { inProgressTicket } from "@/apis/public";
 import { ticketMessagesKey, useTicketMessagesQuery, useTickeUsersQuery, type ChatMessage } from "./useTicketMessages";
 import { getFilePath } from "@/utils/utils";
 
@@ -141,8 +140,6 @@ export default function useMessages() {
         sendTyping(false);
         setDraft("");
         setSelectedFile(null); // optimistic reset
-        // mark the ticket as in progress after the first message
-        if (messages.length === 0) await inProgressTicket(ticketId);
 
         let attachment: AttachmentMeta | undefined;
         let uploadedFilePath: string | undefined;

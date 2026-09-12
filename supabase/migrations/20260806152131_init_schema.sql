@@ -713,7 +713,7 @@ on profiles
 for select
 to authenticated
 using (
-  role = 'agent'
+  (role = 'agent' OR role = 'admin')
   and exists (
     select 1 from tickets
     where tickets.agent_id = profiles.id

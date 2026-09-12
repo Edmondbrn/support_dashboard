@@ -40,7 +40,6 @@ function ConversationCardImpl({
     const lastMessageAuthor = isOwnLastMessage ? currentUsername : conversation.username;
     const accent =
         PRIORITY_ACCENT[conversation.priority] ?? "border-l-gray-500";
-
     return (
         <button
             type="button"

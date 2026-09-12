@@ -8,6 +8,7 @@ import { conversationKey } from "../messages/useConversations";
 
 export const getFindTicketByIdKey = (ticketId: string) => [ticketId, "find-ticket-by-id"];
 export const getFindAssignedTicketKey = (userId : string) => ["agent", userId, "find-assigned-tickets"]
+export const getFindUnssignedTicketKey = () => ["find-unassigned-tickets"]
 
 /**
  * Find a ticket by its id.
@@ -56,7 +57,7 @@ export default function useTickets() {
 
 
     const findUnassignedTicketQuery = useQuery({
-        queryKey: [{"action": "find-unassigned-tickets"}],
+        queryKey: getFindUnssignedTicketKey(),
         staleTime: 60 * 5 * 1000, // 5 minutes
         queryFn: async (): Promise<Ticket[]> => {
             if (!user) {
@@ -105,8 +106,8 @@ export default function useTickets() {
                 return;
             }
             // invalidate cache queries to refresh unassigned and assigned lists
-            queryClient.invalidateQueries({queryKey: [{"action": "find-unassigned-tickets"}]})
-            queryClient.invalidateQueries({queryKey: [{"agent": user?.id, "action": "find-assigned-tickets"}]})
+            queryClient.invalidateQueries({queryKey: getFindUnssignedTicketKey()})
+            queryClient.invalidateQueries({queryKey: getFindAssignedTicketKey(user?.id ?? "anon")})
             showSuccessToast("Ticket claimed");
         },
         onError: (error) => {

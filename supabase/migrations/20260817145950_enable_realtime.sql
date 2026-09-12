@@ -68,7 +68,7 @@ BEGIN
         lm.content AS last_message_content,
         lm.created_at AS last_message_at
     FROM public.tickets AS t
-    LEFT JOIN public.profiles AS p
+    JOIN public.profiles AS p
         ON p.id = CASE WHEN t.agent_id = v_user_id THEN t.client_id ELSE t.agent_id END
     LEFT JOIN last_messages lm ON lm.ticket_id = t.id
     WHERE 
@@ -205,4 +205,42 @@ $function$
 
 REVOKE ALL ON FUNCTION public.update_ticket_last_read(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.update_ticket_last_read(uuid) FROM anon;
-grant execute on function public.update_ticket_last_read(uuid) to authenticated;
+GRANT EXECUTE ON FUNCTION public.update_ticket_last_read(uuid) TO authenticated;
+
+
+-- turn ticket status to in_progress after the first agent's message
+CREATE FUNCTION public.turn_ticket_to_in_progress()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+BEGIN
+    -- finish if the sender is the client
+    IF NOT public.is_agent() THEN
+        RETURN NEW;
+    END IF;
+
+    -- no action if this is not the first agent message
+    IF EXISTS(
+        SELECT 1 
+        FROM public.messages m
+        JOIN public.profiles p ON p.id = m.sender_id
+        WHERE m.ticket_id = NEW.ticket_id 
+        AND (p.role = 'agent'::roles OR p.role = 'admin'::roles)
+    ) THEN
+        RETURN NEW;
+    END IF;
+    -- turn to in progress and send the mail
+    PERFORM public.in_progress_ticket(NEW.ticket_id);
+
+    RETURN NEW;
+END;
+$function$;
+
+
+CREATE TRIGGER set_turn_ticket_to_in_progress 
+BEFORE INSERT ON public.messages 
+FOR EACH ROW 
+WHEN (row_security_active('public.messages')) -- do not apply for admin
+EXECUTE FUNCTION public.turn_ticket_to_in_progress();

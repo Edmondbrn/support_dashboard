@@ -78,7 +78,7 @@ export interface UserConversation {
     description: string,
     created_at: string,
     other_user_id: string,
-    username: string,
+    username: string, // name of the other user
     last_message_content: string | null,
     last_message_at: string | null,
     sender_id: string | null
