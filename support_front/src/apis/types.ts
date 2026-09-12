@@ -112,3 +112,11 @@ export interface AgentStats {
     count: number,
     status: TicketStatus
 }
+
+export interface AdminUser {
+    id: string;
+    username: string;
+    role: UserRole;
+    created_at: string;
+    last_sign_in_at: string | null;
+}

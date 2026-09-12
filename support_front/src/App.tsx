@@ -10,6 +10,7 @@ import Messages from './pages/messages/Messages';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';
 import AdminTickets from './pages/admin/AdminTickets';
+import AdminUsers from './pages/admin/AdminUsers';
 import NavBar from './components/shared/navBar';
 import { useAuth } from './contexts/AuthContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -97,6 +98,16 @@ const router = createBrowserRouter([
           <ProtectedRoute>
             <AdminRoute>
               <AdminTickets/>
+            </AdminRoute>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: appRoutes.ADMIN_USERS,
+        element: (
+          <ProtectedRoute>
+            <AdminRoute>
+              <AdminUsers/>
             </AdminRoute>
           </ProtectedRoute>
         )

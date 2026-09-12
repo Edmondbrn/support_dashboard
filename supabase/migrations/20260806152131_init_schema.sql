@@ -178,7 +178,7 @@ CREATE TABLE public.tickets (
   description text                     NOT NULL,
   priority    public.ticket_priority   NOT NULL,
   created_at  timestamp with time zone DEFAULT NOW() NOT NULL,
-  closed_by   uuid                     DEFAULT NULL,
+  closed_by   uuid                     DEFAULT NULL, -- if status = closed and is null == agent has been deleted
   CHECK (length(description) <= 255)
 );
 COMMENT ON TABLE public.tickets IS 'Ticket created by client';
@@ -207,7 +207,7 @@ CREATE TABLE public.messages (
   id                   uuid                     DEFAULT gen_random_uuid() NOT NULL,
   created_at           timestamp with time zone DEFAULT now() NOT NULL,
   ticket_id            uuid                     NOT NULL,
-  sender_id            uuid                     NOT NULL,
+  sender_id            uuid                     DEFAULT NULL, -- if the sender has been deleted
   content              text                     DEFAULT NULL,
   attachment_url       text                     DEFAULT NULL,
   attachment_mime_type mime_type                DEFAULT NULL::mime_type,
@@ -230,7 +230,7 @@ grant all on public.messages to service_role;
 ALTER TABLE public.messages
   ADD CONSTRAINT messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.tickets(id) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE public.messages
-  ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
+  ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 CREATE INDEX messages_created_at_ticket_id_idx ON public.messages (ticket_id, created_at);
 
@@ -242,13 +242,13 @@ ALTER TABLE public.profiles
 
 ------- Tickets --------
 ALTER TABLE public.tickets
-  ADD CONSTRAINT tickets_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
+  ADD CONSTRAINT tickets_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 ALTER TABLE public.tickets
   ADD CONSTRAINT tickets_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE public.tickets
-  ADD CONSTRAINT tickets_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
+  ADD CONSTRAINT tickets_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 CREATE INDEX tickets_client_id_agent_id_idx ON public.tickets (client_id, agent_id);
 CREATE INDEX tickets_created_at_id_idx ON public.tickets (created_at, id);

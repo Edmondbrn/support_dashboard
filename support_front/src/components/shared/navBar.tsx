@@ -11,7 +11,8 @@ import {
     MessageSquare,
     ShieldCheck,
     Ticket,
-    TicketPlus
+    TicketPlus,
+    Users
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { getUserInitials } from "@/utils/userUtils";
@@ -44,6 +45,7 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
         { label: "Dashboard", to: appRoutes.HOME, icon: LayoutDashboard },
         { label: "Tickets", to: appRoutes.TICKETS, icon: Ticket },
         { label: "All tickets", to: appRoutes.ADMIN_TICKETS, icon: ShieldCheck },
+        { label: "Users", to: appRoutes.ADMIN_USERS, icon: Users },
         { label: "Messages", to: appRoutes.MESSAGES, icon: MessageSquare }
     ]
 };

@@ -202,6 +202,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_user: { Args: { p_user_id: string }; Returns: boolean }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          last_sign_in_at: string | null
+          role: Database["public"]["Enums"]["roles"]
+          username: string
+        }[]
+      }
       claim_ticket: {
         Args: { p_agent_id: string; p_ticket_id: string }
         Returns: boolean

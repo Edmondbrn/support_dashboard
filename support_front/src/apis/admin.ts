@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { ApiCallResponse } from "./types";
+import type { ApiCallResponse, UserRole } from "./types";
 
 /**
  * Admin: fetch every ticket with creator + assigned agent.
@@ -90,6 +90,62 @@ export async function reassignTicket(
 
     if (error) {
         console.error("[ERROR] Supabase error while reassigning ticket", error.message);
+        return { status: "fail", errorMsg: error.message, errorCode: error.code };
+    }
+
+    return { status: "success", data };
+}
+
+/**
+ * Admin: fetch every user with role, creation date and last sign-in.
+ * Backed by the admin_list_users RPC (admin-only, joins auth.users).
+ */
+export async function findAllUsersForAdmin(): Promise<ApiCallResponse> {
+    // ordering (newest first) is done inside the RPC
+    const { data, error } = await supabase.rpc("admin_list_users");
+
+    if (error) {
+        console.error("[ERROR] Supabase error while fetching all users for admin", error.message);
+        return { status: "fail", errorMsg: error.message, errorCode: error.code };
+    }
+
+    return { status: "success", data };
+}
+
+/**
+ * Admin: update a user's role via RPC (sensitive write, no direct UPDATE).
+ * Backend refuses self role changes and demoting the last admin.
+ */
+export async function updateUserRole(
+    userId: string,
+    newRole: UserRole,
+): Promise<ApiCallResponse> {
+    const { data, error } = await supabase.rpc("update_role", {
+        p_profile_id: userId,
+        p_new_role: newRole,
+    });
+
+    if (error) {
+        console.error("[ERROR] Supabase error while updating user role", error.message);
+        return { status: "fail", errorMsg: error.message, errorCode: error.code };
+    }
+
+    return { status: "success", data };
+}
+
+/**
+ * Admin: delete an account completely (auth user + cascaded profile/tickets).
+ * Backend refuses self deletion and deleting the last admin.
+ */
+export async function deleteUserAccount(
+    userId: string,
+): Promise<ApiCallResponse> {
+    const { data, error } = await supabase.rpc("admin_delete_user", {
+        p_user_id: userId,
+    });
+
+    if (error) {
+        console.error("[ERROR] Supabase error while deleting user", error.message);
         return { status: "fail", errorMsg: error.message, errorCode: error.code };
     }
 
