@@ -52,7 +52,7 @@ function ConversationCardImpl({
 
                 <div className="flex min-w-0 items-center gap-3">
                     <div className="relative shrink-0">
-                        <UserAvatar initials={initialsFromUsername(conversation.username)} />
+                        <UserAvatar initials={initialsFromUsername(conversation.username)} username={conversation.username}/>
                         {/* undread count badge */}
                         {unreadCount > 0 && (
                         <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-orange-500 text-[11px] font-semibold text-white ring-2 ring-black/40">

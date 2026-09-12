@@ -154,7 +154,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                             if (old.some((m) => m.id === row.id)) return old;
                             return [
                                 ...old, 
-                                {...row, sender: senderProfile ? {username: senderProfile.username} : null}
+                                {...row, sender: senderProfile ? {username: senderProfile.username, role: senderProfile.role} : null}
                             ]; // add the new message to the list
                         }
                     );

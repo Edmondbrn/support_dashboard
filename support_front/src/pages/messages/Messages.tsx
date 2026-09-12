@@ -194,6 +194,7 @@ export default function Messages() {
                             key={m.id}
                             sentAt={formatDate(m.created_at)}
                             senderName={m.sender?.username ?? "unknown"}
+                            senderRole={m.sender?.role}
                             content={m.content}
                             attachmentMimeType={m.attachment_mime_type}
                             attachmentPath={m.attachment_url}

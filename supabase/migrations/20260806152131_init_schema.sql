@@ -708,17 +708,18 @@ CREATE POLICY "Authenticated can see their profile" ON public.profiles
   USING ((id = ( SELECT auth.uid() AS uid)));
 
 
-create policy "clients can view profile of their assigned agent"
+create policy "clients can view profile of their assigned agent and the admin ones"
 on profiles
 for select
 to authenticated
 using (
-  (role = 'agent' OR role = 'admin')
+  role = 'admin' OR
+  (role = 'agent' 
   and exists (
     select 1 from tickets
     where tickets.agent_id = profiles.id
     and tickets.client_id = (SELECT auth.uid() AS uid)
-  )
+  ))
 );
 
 

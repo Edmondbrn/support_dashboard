@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { findMessagesForTicket, findTicketUsers } from "@/apis/messages";
-import type { MessageRow, TicketUser } from "@/apis/types";
+import type { MessageRow, TicketUser, UserRole } from "@/apis/types";
 
 // add the sender username from the join
 export interface ChatMessage extends MessageRow {
-    sender: { username: string } | null;
+    sender: { username: string, role: UserRole } | null;
 }
 
 /**

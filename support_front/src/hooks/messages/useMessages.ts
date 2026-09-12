@@ -194,7 +194,7 @@ export default function useMessages() {
             const newMessage = res.data as MessageRow;
             const chatMessage: ChatMessage = {
                 ...newMessage,
-                sender: profile ? { username: profile.username } : null,
+                sender: profile ? { username: profile.username, role: profile.role } : null,
             };
 
             // patch the cache directly (no refetch of the whole thread).

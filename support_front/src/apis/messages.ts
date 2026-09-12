@@ -62,7 +62,7 @@ export async function findMessagesForTicket(
                                     content,
                                     created_at,
                                     sender_id,
-                                    sender:profiles!sender_id (username),
+                                    sender:profiles!sender_id (username, role),
                                     attachment_url,
                                     attachment_mime_type,
                                     attachment_name,
