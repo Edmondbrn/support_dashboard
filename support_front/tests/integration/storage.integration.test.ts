@@ -191,6 +191,21 @@ describe("message-attachments storage", () => {
                 expect(res.status).toBe("fail");
             }
         });
+
+        it("fails for an unauthenticated caller", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "No session URL"))
+                .data as { id: string };
+
+            await supabase.auth.signOut();
+            const res = await getAttachmentSignedUrls([`${ticket.id}/file.png`]);
+            if (res.status === "success") {
+                const entry = (res.data as { signedUrl?: string; error?: string }[])[0];
+                expect(entry.signedUrl).toBeFalsy();
+            } else {
+                expect(res.status).toBe("fail");
+            }
+        });
     });
 
     describe("deleteAttachment", () => {

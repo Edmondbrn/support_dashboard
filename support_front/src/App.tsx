@@ -5,7 +5,7 @@ import SignUp from './pages/auth/signup';
 import Signin from './pages/auth/signin';
 import Home from './pages/home/home';
 import Tickets from './pages/tickets/tickets';
-import CreateTicket from './pages/tickets/createTicket';
+import CreateTicket from './pages/tickets/CreateTicket';
 import Messages from './pages/messages/Messages';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';

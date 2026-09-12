@@ -194,7 +194,7 @@ describe("messages/conversation APIs", () => {
             expect(page1Rows.map((r) => r.id)).not.toContain(page2Rows[0].id);
         });
 
-        it("still surfaces the client's own ticket even when it has not been claimed by an agent", async () => {
+        it("do not surfaces the client's own ticket if it has not been claimed by an agent", async () => {
             await signIn(clientEmail, clientPassword);
             const unassigned = (
                 await createTicket(client!.userId, "software", "low", "Unassigned")
@@ -202,7 +202,7 @@ describe("messages/conversation APIs", () => {
 
             const res = await findUserConversations(undefined, undefined);
             const rows = res.data as { id: string }[];
-            expect(rows.map((r) => r.id)).toContain(unassigned.id);
+            expect(rows.map((r) => r.id)).not.toContain(unassigned.id);
         });
 
         it("fails for an unauthenticated caller", async () => {
@@ -255,6 +255,14 @@ describe("messages/conversation APIs", () => {
             await supabase.auth.signOut();
             const res = await findConversationById(uuidv4());
             expect(res.status).toBe("error");
+        });
+
+        it("returns null data for an unknown ticket id (authenticated)", async () => {
+            await signIn(clientEmail, clientPassword);
+            const res = await findConversationById(uuidv4());
+
+            expect(res.status).toBe("success");
+            expect(res.data).toBeNull();
         });
     });
 
@@ -371,9 +379,31 @@ describe("messages/conversation APIs", () => {
             await signIn(strangerEmail, strangerPassword);
             const res = await findTicketUsers(ticket.id);
             expect(res.status).toBe("success");
-            const data = res.data as {agent: {username: string}, client: {username: string}}
-            expect(data.agent).toBeNull();
-            expect(data.client).toBeNull();
+            const data = res.data as {agent: {username: string} | null, client: {username: string}}
+            expect(data).toBeNull();
+        });
+
+        it("returns null data for an unknown ticket id", async () => {
+            await signIn(clientEmail, clientPassword);
+            const res = await findTicketUsers(uuidv4());
+
+            expect(res.status).toBe("success");
+            expect(res.data).toBeNull();
+        });
+
+        it("fails for an unauthenticated caller", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "Auth check"))
+                .data as { id: string };
+
+            await supabase.auth.signOut();
+            const res = await findTicketUsers(ticket.id);
+            // RLS denies the row: either fail or null data, never the usernames.
+            if (res.status === "success") {
+                expect(res.data).toBeNull();
+            } else {
+                expect(res.status).toBe("fail");
+            }
         });
     });
 
@@ -476,6 +506,34 @@ describe("messages/conversation APIs", () => {
             expect(error).toBeNull();
             expect(rows).toHaveLength(0);
         });
+
+        it("rejects an empty message with neither content nor attachment", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "Empty msg"))
+                .data as { id: string };
+
+            const res = await sendMessage(ticket.id, client!.userId, undefined, undefined);
+            expect(res.status).toBe("fail");
+        });
+
+        it("rejects content longer than 500 characters", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "Too long"))
+                .data as { id: string };
+
+            const res = await sendMessage(ticket.id, client!.userId, "x".repeat(501));
+            expect(res.status).toBe("fail");
+        });
+
+        it("fails for an unauthenticated caller", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "No session"))
+                .data as { id: string };
+
+            await supabase.auth.signOut();
+            const res = await sendMessage(ticket.id, client!.userId, "hello");
+            expect(res.status).toBe("fail");
+        });
     });
 
     describe("fetchUnreadCounts", () => {
@@ -542,6 +600,12 @@ describe("messages/conversation APIs", () => {
             const rows = (res.data ?? []) as { ticket_id: string }[];
             expect(rows.find((r) => r.ticket_id === foreignTicket.id)).toBeUndefined();
         });
+
+        it("fails for an unauthenticated caller", async () => {
+            await supabase.auth.signOut();
+            const res = await fetchUnreadCounts();
+            expect(res.status).toBe("fail");
+        });
     });
 
     describe("markTicketRead", () => {
@@ -597,6 +661,22 @@ describe("messages/conversation APIs", () => {
 
             await signIn(clientEmail, clientPassword);
             const res = await markTicketRead(foreignTicket.id);
+            expect(res.status).toBe("fail");
+        });
+
+        it("fails for an unauthenticated caller", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "No session read"))
+                .data as { id: string };
+
+            await supabase.auth.signOut();
+            const res = await markTicketRead(ticket.id);
+            expect(res.status).toBe("fail");
+        });
+
+        it("fails for an unknown ticket id", async () => {
+            await signIn(clientEmail, clientPassword);
+            const res = await markTicketRead(uuidv4());
             expect(res.status).toBe("fail");
         });
     });

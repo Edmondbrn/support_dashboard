@@ -214,7 +214,7 @@ CREATE TABLE public.messages (
   attachment_name      text                     DEFAULT NULL,
   attachment_size      bigint                   DEFAULT NULL,
   CHECK ((content IS NULL OR length(trim(content)) <= 500) AND (content IS NULL OR length(trim(content)) > 0)),
-  CHECK ((content IS NULL OR length(trim(attachment_url)) <= 2000) AND (attachment_name IS NULL OR length(trim(attachment_url)) > 0))
+  CHECK ((attachment_url IS NULL OR length(trim(attachment_url)) <= 2000) AND (attachment_name IS NULL OR length(trim(attachment_url)) > 0))
 );
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
@@ -338,10 +338,25 @@ SET search_path TO 'public'
 AS $function$
 DECLARE
   v_is_new_agent_valid boolean;
+  v_ticket_status public.ticket_status;
 BEGIN
 
   IF NOT public.is_admin() THEN
     RAISE EXCEPTION 'Forbidden'
+      USING ERRCODE = '42501'; -- 403 Forbidden
+  END IF;
+
+  SELECT t.status INTO v_ticket_status
+  FROM public.tickets AS t
+  WHERE t.id = p_ticket_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Ticket % not found', p_ticket_id
+      USING ERRCODE = 'P0002'; -- 404 Not Found
+  END IF;
+
+  IF v_ticket_status = 'closed'::public.ticket_status THEN
+    RAISE EXCEPTION 'Forbidden, ticket is closed'
       USING ERRCODE = '42501'; -- 403 Forbidden
   END IF;
 
@@ -359,11 +374,6 @@ BEGIN
   UPDATE public.tickets
   SET agent_id = p_new_agent_id
   WHERE id = p_ticket_id;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Ticket % not found', p_ticket_id
-      USING ERRCODE = 'P0002'; -- 404 Not Found
-  END IF;
 
   RETURN TRUE;
 END;
@@ -679,23 +689,33 @@ EXECUTE FUNCTION public.set_ticket_default_fields();
 
 
 -- Trigger function to force created_at to current server time
-CREATE OR REPLACE FUNCTION public.override_message_created_at()
+CREATE OR REPLACE FUNCTION public.check_message_conformity()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $function$
 BEGIN
+  -- no message without content and attachment
+  IF NEW.content IS NULL AND NEW.attachment_url IS NULL THEN
+      RAISE EXCEPTION 'Forbidden'
+        USING ERRCODE = '42501'; -- 403 Forbidden
+  END IF;
+
   NEW.created_at := now();
   RETURN NEW;
+
 END;
 $function$;
 
 -- Attach trigger to messages table
-CREATE TRIGGER enforce_message_created_at
+CREATE TRIGGER enforce_message_conformity
 BEFORE INSERT ON public.messages
 FOR EACH ROW
 WHEN (row_security_active('public.tickets')) -- do not apply for admin
-EXECUTE FUNCTION public.override_message_created_at();
+EXECUTE FUNCTION public.check_message_conformity();
+
+
+
 ----------- RLS policies --------------
 
 -- No UPDATE RLS policies because they are too complex to handle cleanly (trigger function to avoid the update of fixed values), 
@@ -778,8 +798,10 @@ CREATE POLICY "Agent sees assigned and unassigned tickets" ON public.tickets
   FOR SELECT
   TO authenticated
   USING (
-    agent_id IS NULL OR
-    (agent_id = ( SELECT auth.uid() AS uid))
+    public.is_agent() AND (
+      agent_id IS NULL OR
+      (agent_id = ( SELECT auth.uid() AS uid))
+    )
   );
 
 CREATE POLICY "Client can create ticket" ON public.tickets
