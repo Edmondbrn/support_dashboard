@@ -1,6 +1,6 @@
 import MessageCard from "@/components/messages/MessageCard";
 import useMessages from "@/hooks/messages/useMessages";
-import { InboxIcon } from "lucide-react";
+import { ArrowLeft, InboxIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import MessageInput from "@/components/messages/MessageInput";
 import MessageList from "./MessageList";
@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { twJoin } from "tailwind-merge";
 import { getCategoryBadgeVariant, getPriorityBadgeVariant, getStatusBadgeVariant } from "@/utils/ticketBadges";
 import type { TicketById } from "@/apis/types";
+import { useNavigate } from "react-router";
+import { appRoutes } from "@/config";
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString();
@@ -34,6 +36,8 @@ export default function Messages() {
         findTicketByIdQuery,
         handleInProgress
     } = useTickets();
+
+    const navigate = useNavigate();
     
 
     function agentActionBtn(ticketId : string, ticket : TicketById) {
@@ -125,8 +129,11 @@ export default function Messages() {
     }
     // State: Messages exist
     return (
-        <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col px-10 py-5">
+        <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col gap-2 px-10 py-5">
             {/* header: conversation partner + online status */}
+            <button className="cursor-pointer" onClick={() => navigate(appRoutes.MESSAGES)}>
+                <ArrowLeft className="rounded-2xl border-2 border-gray-400 p-1" size={32}/>
+            </button>
             {
                 isTicketUserLoading
                  ? <Spinner className="size-8 text-white"/>
