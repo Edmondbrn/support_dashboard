@@ -4,6 +4,9 @@ import { findAllTicketsForAdmin, getAgentTicketStats, reassignTicket, searchAgen
 import type { AdminTicket, AgentOption, AgentStats } from "@/apis/types";
 import { useConfirm } from "@/contexts/ConfirmationDialogContext";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
+import { getFindAssignedTicketKey } from "../tickets/useTickets";
+import { conversationKey } from "../messages/useConversations";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const adminAllTicketsKey = ["admin", "all-tickets"];
 export const agentSearchKey = (query: string) => ["admin", "agent-search", query];
@@ -56,6 +59,7 @@ export function useAgentStats(agentId: string | null, enabled: boolean) {
 export default function useAdminTickets() {
     const queryClient = useQueryClient();
     const confirm = useConfirm();
+    const { user } = useAuth();
     const [pendingAssignments, setPendingAssignments] = useState<Record<string, AgentOption>>({});
 
     const allTicketsQuery = useQuery({
@@ -110,6 +114,10 @@ export default function useAdminTickets() {
             queryClient.invalidateQueries({ queryKey: adminAllTicketsKey });
             // stats may have changed for reassigned agents
             queryClient.invalidateQueries({ queryKey: ["admin", "agent-stats"] });
+            // reset conversation list and assigned tickets
+            queryClient.invalidateQueries({ queryKey: getFindAssignedTicketKey(user?.id ?? "anon") });
+            queryClient.invalidateQueries({ queryKey: conversationKey(user?.id ?? "anon") });
+
             clearPendingAssignments();
             showSuccessToast(`${count} ticket${count > 1 ? "s" : ""} reassigned`);
         },
