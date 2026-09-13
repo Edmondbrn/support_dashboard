@@ -199,3 +199,39 @@ $function$;
 REVOKE ALL ON FUNCTION public.admin_delete_user(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.admin_delete_user(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.admin_delete_user(uuid) TO authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.find_user_ticket(v_ticket_id uuid)
+RETURNS TABLE (
+    ticket_id uuid,
+    client_id uuid,
+    agent_id uuid,
+    client_username text,
+    agent_username text
+)
+LANGUAGE plpgsql
+SECURITY INVOKER
+STABLE
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_user_id uuid := public.get_current_user();
+BEGIN
+    RETURN QUERY
+    SELECT
+        t.id,
+        t.client_id,
+        t.agent_id,
+        c.username,
+        a.username
+    FROM public.tickets AS t
+    JOIN public.profiles AS c ON c.id = t.client_id
+    LEFT JOIN public.profiles AS a ON a.id = t.agent_id
+    WHERE t.id = v_ticket_id
+      AND (t.client_id = v_user_id OR t.agent_id = v_user_id OR public.is_admin());
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.find_user_ticket(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.find_user_ticket(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.find_user_ticket(uuid) TO authenticated;

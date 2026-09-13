@@ -248,6 +248,16 @@ export type Database = {
           username: string
         }[]
       }
+      find_user_ticket: {
+        Args: { v_ticket_id: string }
+        Returns: {
+          agent_id: string | null
+          agent_username: string | null
+          client_id: string
+          client_username: string
+          ticket_id: string
+        }[]
+      }
       get_agent_ticket_stat: {
         Args: { v_agent_id: string }
         Returns: {

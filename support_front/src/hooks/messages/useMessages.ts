@@ -46,7 +46,7 @@ export default function useMessages() {
         profile?.username,
     );
 
-    const isUnassigned = Boolean(ticketId) && Boolean(ticketUsers) && ticketUsers!.agentName == null;
+    const isUnassigned = Boolean(ticketId) && Boolean(ticketUsers) && ticketUsers!.agent_username == null;
 
     // compute user online status for the current conversation
     const counterpartOnline = useMemo(() => {
@@ -55,13 +55,13 @@ export default function useMessages() {
         }
 
         // unassigned: no counterpart yet
-        if (ticketUsers.agentName == null) {
+        if (ticketUsers.agent_username == null) {
             return {}
         }
 
-        const counterPartName = ticketUsers.agentName !== profile?.username
-            ? ticketUsers.agentName
-            : ticketUsers.clientName;
+        const counterPartName = ticketUsers.agent_username !== profile?.username
+            ? ticketUsers.agent_username
+            : ticketUsers.client_username;
 
         return {
             [counterPartName]: onlineUsernames.has(counterPartName)

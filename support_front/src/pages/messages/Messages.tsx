@@ -176,7 +176,7 @@ export default function Messages() {
         )
     }
 
-    const showUnassigned = isUnassigned || ticketUsers?.agentName == null;
+    const showUnassigned = isUnassigned || ticketUsers?.agent_username == null;
     if (showUnassigned) {
         return unassignedTicketSection(ticketId, ticket);
     }

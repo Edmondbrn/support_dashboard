@@ -12,7 +12,7 @@ import {
     findUserConversations,
     findConversationById,
     findMessagesForTicket,
-    findTicketUsers,
+    findUserTicket,
     sendMessage,
     fetchUnreadCounts,
     markTicketRead,
@@ -35,6 +35,11 @@ let agent: TestUserFixture | undefined;
 const strangerEmail = makeTestEmail();
 const strangerPassword = "P@ssw0rd3";
 let stranger: TestUserFixture | undefined;
+
+// An admin: can *see* every ticket via RLS
+const adminEmail = makeTestEmail();
+const adminPassword = "P@ssw0rd4";
+let admin: TestUserFixture | undefined;
 
 function track(email: string): void {
     trackedEmails.push(email);
@@ -71,10 +76,13 @@ beforeAll(async () => {
     client = await createTestUser({ email: clientEmail, password: clientPassword });
     agent = await createTestUser({ email: agentEmail, password: agentPassword });
     stranger = await createTestUser({ email: strangerEmail, password: strangerPassword });
+    admin = await createTestUser({ email: adminEmail, password: adminPassword });
     await adminClient.from("profiles").update({ role: "agent" }).eq("id", agent!.userId);
+    await adminClient.from("profiles").update({ role: "admin" }).eq("id", admin!.userId);
     track(clientEmail);
     track(agentEmail);
     track(strangerEmail);
+    track(adminEmail);
 });
 
 beforeEach(async () => {
@@ -347,18 +355,27 @@ describe("messages/conversation APIs", () => {
         });
     });
 
-    describe("findTicketUsers", () => {
-        it("returns both usernames once a ticket is assigned", async () => {
+    describe("findUserTicket", () => {
+        it("returns participant ids and usernames once a ticket is assigned", async () => {
             await signIn(clientEmail, clientPassword);
             const ticket = (await createTicket(client!.userId, "software", "low", "Both users"))
                 .data as { id: string };
             await adminClient.from("tickets").update({ agent_id: agent!.userId }).eq("id", ticket.id);
 
-            const res = await findTicketUsers(ticket.id);
+            const res = await findUserTicket(ticket.id);
             expect(res.status).toBe("success");
-            const data = res.data as { client: { username: string }; agent: { username: string } };
-            expect(data.client.username).toBe(client!.username);
-            expect(data.agent.username).toBe(agent!.username);
+            const data = res.data as {
+                ticket_id: string;
+                client_id: string;
+                agent_id: string;
+                client_username: string;
+                agent_username: string;
+            };
+            expect(data.ticket_id).toBe(ticket.id);
+            expect(data.client_id).toBe(client!.userId);
+            expect(data.agent_id).toBe(agent!.userId);
+            expect(data.client_username).toBe(client!.username);
+            expect(data.agent_username).toBe(agent!.username);
         });
 
         it("returns a null agent for an unclaimed ticket", async () => {
@@ -366,9 +383,11 @@ describe("messages/conversation APIs", () => {
             const ticket = (await createTicket(client!.userId, "software", "low", "Unclaimed"))
                 .data as { id: string };
 
-            const res = await findTicketUsers(ticket.id);
+            const res = await findUserTicket(ticket.id);
             expect(res.status).toBe("success");
-            expect((res.data as { agent: unknown }).agent).toBeNull();
+            const data = res.data as { agent_id: unknown; agent_username: unknown };
+            expect(data.agent_id).toBeNull();
+            expect(data.agent_username).toBeNull();
         });
 
         it("returns null for a non-participant", async () => {
@@ -377,15 +396,51 @@ describe("messages/conversation APIs", () => {
                 .data as { id: string };
 
             await signIn(strangerEmail, strangerPassword);
-            const res = await findTicketUsers(ticket.id);
+            const res = await findUserTicket(ticket.id);
             expect(res.status).toBe("success");
-            const data = res.data as {agent: {username: string} | null, client: {username: string}}
-            expect(data).toBeNull();
+            expect(res.data).toBeNull();
+        });
+
+        it("returns data for an admin looking at a ticket they are not part of", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "Admin leak"))
+                .data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: agent!.userId }).eq("id", ticket.id);
+
+            // admins can *see* every ticket via RLS,
+            await signIn(adminEmail, adminPassword);
+            const res = await findUserTicket(ticket.id);
+            expect(res.status).toBe("success");
+            const data = res.data as {
+                ticket_id: string;
+                client_id: string;
+                agent_id: string;
+                client_username: string;
+                agent_username: string;
+            };
+            expect(data.ticket_id).toBe(ticket.id);
+            expect(data.client_id).toBe(client!.userId);
+            expect(data.agent_id).toBe(agent!.userId);
+            expect(data.client_username).toBe(client!.username);
+            expect(data.agent_username).toBe(agent!.username);
+        });
+
+        it("returns the ticket for an admin's own ticket", async () => {
+            await signIn(adminEmail, adminPassword);
+            const ticket = (await createTicket(admin!.userId, "software", "low", "Admin own"))
+                .data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: agent!.userId }).eq("id", ticket.id);
+
+            const res = await findUserTicket(ticket.id);
+            expect(res.status).toBe("success");
+            const data = res.data as { client_id: string; agent_id: string };
+            expect(data.client_id).toBe(admin!.userId);
+            expect(data.agent_id).toBe(agent!.userId);
         });
 
         it("returns null data for an unknown ticket id", async () => {
             await signIn(clientEmail, clientPassword);
-            const res = await findTicketUsers(uuidv4());
+            const res = await findUserTicket(uuidv4());
 
             expect(res.status).toBe("success");
             expect(res.data).toBeNull();
@@ -397,13 +452,8 @@ describe("messages/conversation APIs", () => {
                 .data as { id: string };
 
             await supabase.auth.signOut();
-            const res = await findTicketUsers(ticket.id);
-            // RLS denies the row: either fail or null data, never the usernames.
-            if (res.status === "success") {
-                expect(res.data).toBeNull();
-            } else {
-                expect(res.status).toBe("fail");
-            }
+            const res = await findUserTicket(ticket.id);
+            expect(res.status).toBe("fail");
         });
     });
 

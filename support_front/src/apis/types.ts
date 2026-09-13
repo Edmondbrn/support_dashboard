@@ -64,10 +64,16 @@ export interface TicketById {
     close_agent: {"username": string | null};
 }
 
-
-export interface TicketUser {
-    agentName: string | null,
-    clientName: string
+/**
+ * Single row returned by the `find_user_ticket` RPC: participant ids used
+ * for membership checks, plus usernames used for display.
+ */
+export interface UserTicket {
+    ticket_id: string,
+    client_id: string,
+    agent_id: string | null,
+    client_username: string,
+    agent_username: string | null,
 }
 
 export interface UserConversation {
