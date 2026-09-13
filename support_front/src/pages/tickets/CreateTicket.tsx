@@ -33,7 +33,7 @@ export default function CreateTicket() {
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center py-10">
-            <Card className="w-1/2 bg-glass text-white">
+            <Card className="w-3/4 md:w-1/2 bg-glass text-white">
                 <CardHeader>
                     <div className="flex items-center justify-center gap-2">
                         <TicketPlus className="size-6 text-orange-300" />

@@ -21,6 +21,10 @@ const fakeEmail2 = makeTestEmail();
 const fakePassword2 = "P@ssw0rd2";
 let fakeUser2 : TestUserFixture | undefined = undefined;
 
+const adminEmail = makeTestEmail();
+const adminPassword = "P@ssw0rd9";
+let adminUser : TestUserFixture | undefined = undefined;
+
 
 function track(email: string): void {
     trackedEmails.push(email);
@@ -37,9 +41,12 @@ afterAll(async () => {
 beforeAll(async () => {
     fakeUser1 = await createTestUser({email: fakeEmail1, password: fakePassword1});
     fakeUser2 = await createTestUser({email: fakeEmail2, password: fakePassword2});
+    adminUser = await createTestUser({email: adminEmail, password: adminPassword});
+    await adminClient.from("profiles").update({ role: "admin" }).eq("id", adminUser!.userId);
     await supabase.auth.signInWithPassword({email: fakeEmail1, password: fakePassword1})
     track(fakeEmail1)
     track(fakeEmail2)
+    track(adminEmail)
 })
 
 beforeEach(async () => {
@@ -107,10 +114,33 @@ describe("public tests", () => {
                 "high",
                 "This should fail on the FK constraint."
             );
-    
+
             expect(res.status).toBe("fail");
             expect(res.errorMsg).toBeDefined();
             expect(res.errorCode).toBeDefined();
+        });
+
+        it("returns fail when unauthenticated", async () => {
+            await supabase.auth.signOut();
+            const res = await createTicket(fakeUser1!.userId, "software", "low", "No session");
+
+            expect(res.status).toBe("fail");
+
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+        });
+
+        it("returns fail for a description longer than 255 characters", async () => {
+            const res = await createTicket(fakeUser1!.userId, "software", "low", "x".repeat(256));
+
+            expect(res.status).toBe("fail");
+        });
+
+        it("refuses to create a ticket for another client id (RLS)", async () => {
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const res = await createTicket(fakeUser2!.userId, "software", "low", "Impersonation");
+
+            expect(res.status).toBe("fail");
         });
     });
     
@@ -256,6 +286,38 @@ describe("public tests", () => {
             expect(res.errorMsg).toBeDefined();
             expect(res.errorCode).toBe("42501") // 403 forbidden
         });
+
+        it("lets an admin claim an unassigned ticket (unassigned base-page flow)", async () => {
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "low", "Admin claim")).data as { id: string };
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+
+            const res = await claimTicket(ticket.id, adminUser!.userId);
+
+            expect(res.status).toBe("success");
+
+            const { data: dbTicket } = await adminClient
+                .from("tickets")
+                .select("agent_id")
+                .eq("id", ticket.id)
+                .maybeSingle();
+            expect(dbTicket?.agent_id).toBe(adminUser!.userId);
+        });
+
+        it("fails with not-found for an unknown ticket id", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail2, password: fakePassword2 });
+
+            const res = await claimTicket("00000000-0000-0000-0000-000000000000", fakeUser2!.userId);
+
+            expect(res.status).toBe("fail");
+            expect(res.errorCode).toBe("P0002");
+        });
     });
 
     describe("findTicketById", () => {
@@ -318,6 +380,35 @@ describe("public tests", () => {
 
             expect(res.status).toBe("success");
             expect(res.data).toBeNull();
+        });
+
+        it("returns the ticket for the assigned agent", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "low", "Agent view")).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: fakeUser2!.userId }).eq("id", ticket.id);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail2, password: fakePassword2 });
+            const res = await findTicketById(ticket.id);
+
+            expect(res.status).toBe("success");
+            expect((res.data as { id: string } | null)?.id).toBe(ticket.id);
+        });
+
+        it("returns any ticket for an admin", async () => {
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "low", "Admin view")).data as { id: string };
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+            const res = await findTicketById(ticket.id);
+
+            expect(res.status).toBe("success");
+            expect((res.data as { id: string } | null)?.id).toBe(ticket.id);
         });
     });
 
@@ -387,6 +478,29 @@ describe("public tests", () => {
             // gets 42501 rather than P0002 for an unknown id.
             expect(res.status).toBe("fail");
             expect(res.errorCode).toBe("42501");
+        });
+
+        it("lets an admin close any ticket (assigned to another agent)", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "low", "Admin close")).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: fakeUser2!.userId }).eq("id", ticket.id);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+            const res = await closeTicket(ticket.id);
+
+            expect(res.status).toBe("success");
+
+            const { data: dbTicket } = await adminClient
+                .from("tickets")
+                .select("status, closed_by")
+                .eq("id", ticket.id)
+                .maybeSingle();
+            expect(dbTicket?.status).toBe("closed");
+            expect(dbTicket?.closed_by).toBe(adminUser!.userId);
         });
     });
 
@@ -464,6 +578,33 @@ describe("public tests", () => {
             expect(res.status).toBe("fail");
             expect(res.errorCode).toBe("42501"); // 403 forbidden
         });
+
+        it("lets an admin reopen any closed ticket (clears closed_by)", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const ticket = (await createTicket(fakeUser1!.userId, "software", "low", "Admin reopen")).data as { id: string };
+            await adminClient.from("tickets").update({ agent_id: fakeUser2!.userId }).eq("id", ticket.id);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail2, password: fakePassword2 });
+            await closeTicket(ticket.id);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+            const res = await inProgressTicket(ticket.id);
+
+            expect(res.status).toBe("success");
+
+            const { data: dbTicket } = await adminClient
+                .from("tickets")
+                .select("status, closed_by")
+                .eq("id", ticket.id)
+                .maybeSingle();
+            expect(dbTicket?.status).toBe("in_progress");
+            expect(dbTicket?.closed_by).toBeNull();
+        });
     });
 
     describe("findUnassignedTicket", () => {
@@ -496,6 +637,45 @@ describe("public tests", () => {
 
             expect(res.status).toBe("success");
             expect(res.data).toEqual([]);
+        });
+
+        it("lets a client see only their own unassigned tickets (no cross-client leak)", async () => {
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const mine = (await createTicket(fakeUser1!.userId, "software", "low", "Mine unassigned")).data as { id: string };
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail2, password: fakePassword2 });
+            await createTicket(fakeUser2!.userId, "software", "low", "Theirs unassigned");
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const res = await findUnassignedTicket();
+
+            expect(res.status).toBe("success");
+            const ids = (res.data as { id: string }[]).map((t) => t.id);
+            expect(ids).toContain(mine.id);
+            expect(ids).toHaveLength(1);
+        });
+
+        it("lets an agent see all unassigned tickets across clients", async () => {
+            await adminClient.from("profiles").update({ role: "agent" }).eq("id", fakeUser2!.userId);
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            await createTicket(fakeUser1!.userId, "software", "low", "Client1 unassigned");
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail2, password: fakePassword2 });
+            await createTicket(fakeUser2!.userId, "software", "low", "Client2 unassigned");
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail2, password: fakePassword2 });
+            // fakeUser2 is now an agent; the queue must contain both clients' tickets
+            const res = await findUnassignedTicket();
+
+            expect(res.status).toBe("success");
+            expect((res.data as { id: string }[])).toHaveLength(2);
         });
     });
 
@@ -570,7 +750,7 @@ describe("public tests", () => {
 
     
         it("Return error when trying to delete ticket from someone else", async () => {
-            
+
             const ticketId = uuidv4()
             await adminClient
                 .from("tickets")
@@ -584,7 +764,7 @@ describe("public tests", () => {
                     "status": "open",
                     "id": ticketId
                 });
-    
+
             const status = await deleteTicket(ticketId);
 
             // chekc that the ticket still exists
@@ -597,6 +777,54 @@ describe("public tests", () => {
             expect(dbTicket).not.toBeNull()
             // rls does not throw error for delete, just do nothing
             expect(status.status).toBe("success");
+        });
+
+        it("Cannot delete a closed ticket (still present afterwards)", async () => {
+            const ticketId = uuidv4()
+            await adminClient
+                .from("tickets")
+                .insert({
+                    "client_id": fakeUser1!.userId,
+                    "agent_id": null,
+                    "category": "delivery",
+                    "closed_by": null,
+                    "description": "Closed ticket",
+                    "priority": "low",
+                    "status": "closed",
+                    "id": ticketId
+                });
+
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const deleteRes = await deleteTicket(ticketId);
+
+            expect(deleteRes.status).toBe("success");
+
+            const { data } = await adminClient
+                .from("tickets")
+                .select("id")
+                .eq("id", ticketId)
+                .maybeSingle();
+            expect(data).not.toBeNull();
+        });
+
+        it("deleting an open ticket cascades its messages", async () => {
+            await supabase.auth.signOut();
+            await supabase.auth.signInWithPassword({ email: fakeEmail1, password: fakePassword1 });
+            const ticketData = (await createTicket(fakeUser1!.userId, "software", "low", "Cascade")).data as { id: string };
+            await adminClient.from("messages").insert({
+                ticket_id: ticketData.id,
+                sender_id: fakeUser1!.userId,
+                content: "bye",
+            });
+
+            await deleteTicket(ticketData.id);
+
+            const { data: msgs } = await adminClient
+                .from("messages")
+                .select("id")
+                .eq("ticket_id", ticketData.id);
+            expect(msgs).toEqual([]);
         });
     });
 })

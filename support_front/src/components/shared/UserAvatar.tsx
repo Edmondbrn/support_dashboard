@@ -1,8 +1,11 @@
+import type { UserRole } from "@/apis/types"
 import { twJoin } from "tailwind-merge"
 
 
 interface UserAvatarProps {
     initials : string
+    username: string,
+    role?: UserRole
     className?: string
 }
 
@@ -13,8 +16,17 @@ interface UserAvatarProps {
  * @returns 
  */
 export default function UserAvatar(props : UserAvatarProps) {
+    const color = props.role === "admin" ? "bg-purple-500" : "bg-red-500"
     return (
-        <span className={twJoin(["flex size-8 items-center justify-center rounded-full bg-red-500 text-xs font-semibold text-white ring-1 ring-white/10", props.className])}>
+        <span 
+            title={props.username} 
+            className={
+                twJoin(["\
+                    flex size-8 items-center justify-center \
+                    rounded-full text-xs font-semibold text-white \
+                    ring-1 ring-white/10", 
+                    color, props.className])}
+        >
             {props.initials}
         </span>
     )

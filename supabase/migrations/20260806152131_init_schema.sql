@@ -178,7 +178,7 @@ CREATE TABLE public.tickets (
   description text                     NOT NULL,
   priority    public.ticket_priority   NOT NULL,
   created_at  timestamp with time zone DEFAULT NOW() NOT NULL,
-  closed_by   uuid                     DEFAULT NULL,
+  closed_by   uuid                     DEFAULT NULL, -- if status = closed and is null == agent has been deleted
   CHECK (length(description) <= 255)
 );
 COMMENT ON TABLE public.tickets IS 'Ticket created by client';
@@ -207,14 +207,14 @@ CREATE TABLE public.messages (
   id                   uuid                     DEFAULT gen_random_uuid() NOT NULL,
   created_at           timestamp with time zone DEFAULT now() NOT NULL,
   ticket_id            uuid                     NOT NULL,
-  sender_id            uuid                     NOT NULL,
+  sender_id            uuid                     DEFAULT NULL, -- if the sender has been deleted
   content              text                     DEFAULT NULL,
   attachment_url       text                     DEFAULT NULL,
   attachment_mime_type mime_type                DEFAULT NULL::mime_type,
   attachment_name      text                     DEFAULT NULL,
   attachment_size      bigint                   DEFAULT NULL,
   CHECK ((content IS NULL OR length(trim(content)) <= 500) AND (content IS NULL OR length(trim(content)) > 0)),
-  CHECK ((content IS NULL OR length(trim(attachment_url)) <= 2000) AND (attachment_name IS NULL OR length(trim(attachment_url)) > 0))
+  CHECK ((attachment_url IS NULL OR length(trim(attachment_url)) <= 2000) AND (attachment_name IS NULL OR length(trim(attachment_url)) > 0))
 );
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ADD CONSTRAINT messages_pkey PRIMARY KEY (id);
@@ -230,7 +230,7 @@ grant all on public.messages to service_role;
 ALTER TABLE public.messages
   ADD CONSTRAINT messages_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.tickets(id) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE public.messages
-  ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
+  ADD CONSTRAINT messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 CREATE INDEX messages_created_at_ticket_id_idx ON public.messages (ticket_id, created_at);
 
@@ -242,13 +242,13 @@ ALTER TABLE public.profiles
 
 ------- Tickets --------
 ALTER TABLE public.tickets
-  ADD CONSTRAINT tickets_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
+  ADD CONSTRAINT tickets_agent_id_fkey FOREIGN KEY (agent_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 ALTER TABLE public.tickets
   ADD CONSTRAINT tickets_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE public.tickets
-  ADD CONSTRAINT tickets_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE CASCADE;
+  ADD CONSTRAINT tickets_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES public.profiles(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 CREATE INDEX tickets_client_id_agent_id_idx ON public.tickets (client_id, agent_id);
 CREATE INDEX tickets_created_at_id_idx ON public.tickets (created_at, id);
@@ -338,6 +338,7 @@ SET search_path TO 'public'
 AS $function$
 DECLARE
   v_is_new_agent_valid boolean;
+  v_ticket_status public.ticket_status;
 BEGIN
 
   IF NOT public.is_admin() THEN
@@ -345,10 +346,24 @@ BEGIN
       USING ERRCODE = '42501'; -- 403 Forbidden
   END IF;
 
+  SELECT t.status INTO v_ticket_status
+  FROM public.tickets AS t
+  WHERE t.id = p_ticket_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Ticket % not found', p_ticket_id
+      USING ERRCODE = 'P0002'; -- 404 Not Found
+  END IF;
+
+  IF v_ticket_status = 'closed'::public.ticket_status THEN
+    RAISE EXCEPTION 'Forbidden, ticket is closed'
+      USING ERRCODE = '42501'; -- 403 Forbidden
+  END IF;
+
   v_is_new_agent_valid := EXISTS(
     SELECT 1
     FROM public.profiles AS p
-    WHERE p.id = p_new_agent_id AND p.role = 'agent'::public.roles
+    WHERE p.id = p_new_agent_id AND p.role IN ('agent'::public.roles, 'admin'::public.roles)
   );
 
   IF NOT v_is_new_agent_valid THEN
@@ -359,11 +374,6 @@ BEGIN
   UPDATE public.tickets
   SET agent_id = p_new_agent_id
   WHERE id = p_ticket_id;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Ticket % not found', p_ticket_id
-      USING ERRCODE = 'P0002'; -- 404 Not Found
-  END IF;
 
   RETURN TRUE;
 END;
@@ -679,23 +689,33 @@ EXECUTE FUNCTION public.set_ticket_default_fields();
 
 
 -- Trigger function to force created_at to current server time
-CREATE OR REPLACE FUNCTION public.override_message_created_at()
+CREATE OR REPLACE FUNCTION public.check_message_conformity()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $function$
 BEGIN
+  -- no message without content and attachment
+  IF NEW.content IS NULL AND NEW.attachment_url IS NULL THEN
+      RAISE EXCEPTION 'Forbidden'
+        USING ERRCODE = '42501'; -- 403 Forbidden
+  END IF;
+
   NEW.created_at := now();
   RETURN NEW;
+
 END;
 $function$;
 
 -- Attach trigger to messages table
-CREATE TRIGGER enforce_message_created_at
+CREATE TRIGGER enforce_message_conformity
 BEFORE INSERT ON public.messages
 FOR EACH ROW
 WHEN (row_security_active('public.tickets')) -- do not apply for admin
-EXECUTE FUNCTION public.override_message_created_at();
+EXECUTE FUNCTION public.check_message_conformity();
+
+
+
 ----------- RLS policies --------------
 
 -- No UPDATE RLS policies because they are too complex to handle cleanly (trigger function to avoid the update of fixed values), 
@@ -708,17 +728,18 @@ CREATE POLICY "Authenticated can see their profile" ON public.profiles
   USING ((id = ( SELECT auth.uid() AS uid)));
 
 
-create policy "clients can view profile of their assigned agent"
+create policy "clients can view profile of their assigned agent and the admin ones"
 on profiles
 for select
 to authenticated
 using (
-  role = 'agent'
+  role = 'admin' OR
+  (role = 'agent' 
   and exists (
     select 1 from tickets
     where tickets.agent_id = profiles.id
     and tickets.client_id = (SELECT auth.uid() AS uid)
-  )
+  ))
 );
 
 
@@ -744,7 +765,9 @@ CREATE POLICY "Participants can insert messages" ON public.messages
       WHERE (
         (t.id = messages.ticket_id) 
         AND (
-          (t.client_id = ( SELECT auth.uid() AS uid)) OR (t.agent_id = ( SELECT auth.uid() AS uid))
+          (t.client_id = ( SELECT auth.uid() AS uid)) 
+          OR (t.agent_id = ( SELECT auth.uid() AS uid))
+          OR (public.get_role() = 'admin')
         )
         AND (
           t.status != 'closed'::ticket_status
@@ -764,17 +787,21 @@ CREATE POLICY "Ticket participants can see messages" ON public.messages
         AND (
           (t.client_id = ( SELECT auth.uid() AS uid)) 
           OR (t.agent_id = ( SELECT auth.uid() AS uid)) 
-          OR (public.get_role() = 'admin'))))
+          OR (public.get_role() = 'admin')
         )
-    );
+      )
+    ))
+  );
 
 
 CREATE POLICY "Agent sees assigned and unassigned tickets" ON public.tickets
   FOR SELECT
   TO authenticated
   USING (
-    agent_id IS NULL OR
-    (agent_id = ( SELECT auth.uid() AS uid))
+    public.is_agent() AND (
+      agent_id IS NULL OR
+      (agent_id = ( SELECT auth.uid() AS uid))
+    )
   );
 
 CREATE POLICY "Client can create ticket" ON public.tickets

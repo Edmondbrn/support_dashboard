@@ -9,8 +9,10 @@ import {
     LayoutDashboard,
     LogOut,
     MessageSquare,
+    ShieldCheck,
     Ticket,
-    TicketPlus
+    TicketPlus,
+    Users
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { getUserInitials } from "@/utils/userUtils";
@@ -42,6 +44,8 @@ const NAV_ITEMS: Record<UserRole, NavItem[]> = {
     admin: [
         { label: "Dashboard", to: appRoutes.HOME, icon: LayoutDashboard },
         { label: "Tickets", to: appRoutes.TICKETS, icon: Ticket },
+        { label: "All tickets", to: appRoutes.ADMIN_TICKETS, icon: ShieldCheck },
+        { label: "Users", to: appRoutes.ADMIN_USERS, icon: Users },
         { label: "Messages", to: appRoutes.MESSAGES, icon: MessageSquare }
     ]
 };
@@ -58,6 +62,7 @@ export default function NavBar() {
     }
 
     const initials = getUserInitials(profile);
+    const username = profile?.username ?? "unknown";
 
     return (
         <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/60 backdrop-blur-md">
@@ -112,7 +117,7 @@ export default function NavBar() {
                 {/* User area */}
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                        <UserAvatar initials={initials} />
+                        <UserAvatar initials={initials} username={username} />
                         <span className="hidden text-sm text-slate-200 md:block">
                             {profile?.username ?? "User"}
                         </span>

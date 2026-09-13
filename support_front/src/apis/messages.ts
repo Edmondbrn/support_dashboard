@@ -62,7 +62,7 @@ export async function findMessagesForTicket(
                                     content,
                                     created_at,
                                     sender_id,
-                                    sender:profiles!sender_id (username),
+                                    sender:profiles!sender_id (username, role),
                                     attachment_url,
                                     attachment_mime_type,
                                     attachment_name,
@@ -81,25 +81,20 @@ export async function findMessagesForTicket(
 
 
 /**
- * Fetch the usernames of users related to the ticket
- * @param ticketId 
- * @returns 
+ * Fetch the participant ids (+ usernames) of a ticket, scoped to the caller
+ * @param ticketId
+ * @returns
  */
-export async function findTicketUsers(
+export async function findUserTicket(
     ticketId : string
 ) : Promise<ApiCallResponse> {
 
     const { data, error } = await supabase
-            .from("tickets")
-            .select(`
-                client:profiles!tickets_client_id_fkey (username),
-                agent:profiles!tickets_agent_id_fkey   (username)
-            `)
-            .eq("id", ticketId)
+            .rpc("find_user_ticket", { v_ticket_id: ticketId })
             .maybeSingle();
-    
+
     if (error) {
-        console.error("[ERROR] Supabase error while fetching messages", error.message);
+        console.error("[ERROR] Supabase error while fetching ticket users", error.message);
         return {status: "fail", errorMsg: error.message, errorCode: error.code};
     }
 

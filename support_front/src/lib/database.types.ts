@@ -202,6 +202,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_user: { Args: { p_user_id: string }; Returns: boolean }
+      admin_list_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          last_sign_in_at: string | null
+          role: Database["public"]["Enums"]["roles"]
+          username: string
+        }[]
+      }
       claim_ticket: {
         Args: { p_agent_id: string; p_ticket_id: string }
         Returns: boolean
@@ -235,6 +246,23 @@ export type Database = {
           priority: Database["public"]["Enums"]["ticket_priority"]
           status: Database["public"]["Enums"]["ticket_status"]
           username: string
+        }[]
+      }
+      find_user_ticket: {
+        Args: { v_ticket_id: string }
+        Returns: {
+          agent_id: string | null
+          agent_username: string | null
+          client_id: string
+          client_username: string
+          ticket_id: string
+        }[]
+      }
+      get_agent_ticket_stat: {
+        Args: { v_agent_id: string }
+        Returns: {
+          count: number
+          status: Database["public"]["Enums"]["ticket_status"]
         }[]
       }
       get_current_user: { Args: never; Returns: string }

@@ -21,7 +21,7 @@ function MessageToastContent({ senderProfile, content, onGo, toastId, attachment
     return (
         <Card className="w-[min(90vw,20rem)] bg-glass text-white">
             <CardHeader className="flex items-center gap-3">
-                <UserAvatar initials={getUserInitials(senderProfile)} />
+                <UserAvatar initials={getUserInitials(senderProfile)} username={senderProfile?.username ?? "unknown"} />
                 <CardTitle className="truncate">{senderProfile?.username ?? "User"}</CardTitle>
                 <button className="ml-auto cursor-pointer" onClick={() => toast.dismiss(toastId)}>
                     <X/>

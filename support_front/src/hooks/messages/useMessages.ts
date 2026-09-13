@@ -7,7 +7,6 @@ import { useRealtime } from "@/contexts/RealTimeContext";
 import { deleteAttachment, sendMessage, uploadAttachment } from "@/apis/messages";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AttachmentMeta, MessageRow } from "@/apis/types";
-import { inProgressTicket } from "@/apis/public";
 import { ticketMessagesKey, useTicketMessagesQuery, useTickeUsersQuery, type ChatMessage } from "./useTicketMessages";
 import { getFilePath } from "@/utils/utils";
 
@@ -47,15 +46,22 @@ export default function useMessages() {
         profile?.username,
     );
 
+    const isUnassigned = Boolean(ticketId) && Boolean(ticketUsers) && ticketUsers!.agent_username == null;
+
     // compute user online status for the current conversation
     const counterpartOnline = useMemo(() => {
         if (!ticketUsers) {
             return {}
         }
 
-        const counterPartName = ticketUsers.agentName !== profile?.username 
-            ? ticketUsers.agentName 
-            : ticketUsers.clientName;
+        // unassigned: no counterpart yet
+        if (ticketUsers.agent_username == null) {
+            return {}
+        }
+
+        const counterPartName = ticketUsers.agent_username !== profile?.username
+            ? ticketUsers.agent_username
+            : ticketUsers.client_username;
 
         return {
             [counterPartName]: onlineUsernames.has(counterPartName)
@@ -141,8 +147,6 @@ export default function useMessages() {
         sendTyping(false);
         setDraft("");
         setSelectedFile(null); // optimistic reset
-        // mark the ticket as in progress after the first message
-        if (messages.length === 0) await inProgressTicket(ticketId);
 
         let attachment: AttachmentMeta | undefined;
         let uploadedFilePath: string | undefined;
@@ -197,7 +201,7 @@ export default function useMessages() {
             const newMessage = res.data as MessageRow;
             const chatMessage: ChatMessage = {
                 ...newMessage,
-                sender: profile ? { username: profile.username } : null,
+                sender: profile ? { username: profile.username, role: profile.role } : null,
             };
 
             // patch the cache directly (no refetch of the whole thread).
@@ -219,6 +223,8 @@ export default function useMessages() {
         ticketId,
         draft,
         counterpartOnline,
+        ticketUsers,
+        isUnassigned,
         isTyping,
         isTicketUserLoading,
         isMessagesLoading,

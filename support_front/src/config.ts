@@ -12,6 +12,8 @@ class AppRoutes {
     TICKET_CREATE = "/tickets/new";
     MESSAGES_TICKET = "/messages/:ticketId";
     MESSAGES = "/messages";
+    ADMIN_TICKETS = "/admin/tickets";
+    ADMIN_USERS = "/admin/users";
 }
 
 

@@ -29,7 +29,7 @@ function ConfirmationDialogContent({
             <CardContent className="flex flex-col items-start gap-5 text-sm text-white">
                 {/* content preview */}
                 {
-                    content && <p className="line-clamp-2 wrap-break-words whitespace-normal text-md">{content}</p>
+                    content && <p className="line-clamp-3 wrap-break-words whitespace-normal text-md">{content}</p>
                 }
 
                 <div className="flex flex-col md:flex-row gap-2 md:ml-auto">

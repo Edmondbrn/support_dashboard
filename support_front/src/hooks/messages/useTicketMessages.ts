@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { findMessagesForTicket, findTicketUsers } from "@/apis/messages";
-import type { MessageRow, TicketUser } from "@/apis/types";
+import { findMessagesForTicket, findUserTicket } from "@/apis/messages";
+import type { MessageRow, UserRole, UserTicket } from "@/apis/types";
 
 // add the sender username from the join
 export interface ChatMessage extends MessageRow {
-    sender: { username: string } | null;
+    sender: { username: string, role: UserRole } | null;
 }
 
 /**
@@ -60,8 +60,8 @@ export function useTicketMessagesQuery(ticketId: string | undefined) {
 export function useTickeUsersQuery(ticketId: string | undefined) {
     return useQuery({
         queryKey: ticketUsersKey(ticketId),
-        queryFn: async (): Promise<TicketUser | null> => {
-            const res = await findTicketUsers(ticketId as string);
+        queryFn: async (): Promise<UserTicket | null> => {
+            const res = await findUserTicket(ticketId as string);
             if (res.status !== "success") {
                 throw new Error(res.errorMsg ?? "Failed to ticket users");
             }
@@ -70,11 +70,7 @@ export function useTickeUsersQuery(ticketId: string | undefined) {
                 return null;
             }
 
-            const ticketUsers = res.data as {agent: {username: string}, client: {username: string}}
-            return {
-                agentName: ticketUsers.agent.username,
-                clientName: ticketUsers.client.username,
-            }
+            return res.data as UserTicket;
         },
         enabled: Boolean(ticketId),
         staleTime: 0,

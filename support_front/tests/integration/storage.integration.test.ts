@@ -35,7 +35,6 @@ let otherAgent: TestUserFixture | undefined;
 
 const strangerEmail = makeTestEmail();
 const strangerPassword = "P@ssw0rd4";
-let stranger: TestUserFixture | undefined;
 
 const trackedEmails: string[] = [];
 const uploadedPaths: string[] = [];
@@ -73,7 +72,7 @@ beforeAll(async () => {
     client = await createTestUser({ email: clientEmail, password: clientPassword });
     agent = await createTestUser({ email: agentEmail, password: agentPassword });
     otherAgent = await createTestUser({ email: otherAgentEmail, password: otherAgentPassword });
-    stranger = await createTestUser({ email: strangerEmail, password: strangerPassword });
+    await createTestUser({ email: strangerEmail, password: strangerPassword });
     await adminClient.from("profiles").update({ role: "agent" }).eq("id", agent!.userId);
     await adminClient.from("profiles").update({ role: "agent" }).eq("id", otherAgent!.userId);
     track(clientEmail);
@@ -185,6 +184,21 @@ describe("message-attachments storage", () => {
             // Either the call fails outright, or it succeeds with an
             // unusable/errored entry for that path -- it must never hand back
             // a working signed URL to a non-participant.
+            if (res.status === "success") {
+                const entry = (res.data as { signedUrl?: string; error?: string }[])[0];
+                expect(entry.signedUrl).toBeFalsy();
+            } else {
+                expect(res.status).toBe("fail");
+            }
+        });
+
+        it("fails for an unauthenticated caller", async () => {
+            await signIn(clientEmail, clientPassword);
+            const ticket = (await createTicket(client!.userId, "software", "low", "No session URL"))
+                .data as { id: string };
+
+            await supabase.auth.signOut();
+            const res = await getAttachmentSignedUrls([`${ticket.id}/file.png`]);
             if (res.status === "success") {
                 const entry = (res.data as { signedUrl?: string; error?: string }[])[0];
                 expect(entry.signedUrl).toBeFalsy();

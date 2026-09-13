@@ -8,6 +8,29 @@ import { conversationKey } from "../messages/useConversations";
 
 export const getFindTicketByIdKey = (ticketId: string) => [ticketId, "find-ticket-by-id"];
 export const getFindAssignedTicketKey = (userId : string) => ["agent", userId, "find-assigned-tickets"]
+export const getFindUnssignedTicketKey = () => ["find-unassigned-tickets"]
+
+/**
+ * Find a ticket by its id.
+ * Accepts undefined so callers can hoist the hook above early returns (Rules of Hooks).
+ */
+export function useFindTicketById(ticketId: string | undefined) {
+    return useQuery({
+        queryKey: getFindTicketByIdKey(ticketId ?? "none"),
+        enabled: Boolean(ticketId),
+        staleTime: 60 * 5 * 1000, // 5 minutes
+        queryFn: async (): Promise<TicketById | null> => {
+            const res = await findTicketById(ticketId as string);
+
+            if (res.status === "fail") {
+                console.error("[ERROR] Cannot find ticket for id: " + ticketId, res.errorMsg);
+                return null;
+            }
+
+            return res.data as TicketById;
+        },
+    });
+}
 
 export default function useTickets() {
 
@@ -36,7 +59,7 @@ export default function useTickets() {
 
 
     const findUnassignedTicketQuery = useQuery({
-        queryKey: [{"action": "find-unassigned-tickets"}],
+        queryKey: getFindUnssignedTicketKey(),
         staleTime: 60 * 5 * 1000, // 5 minutes
         queryFn: async (): Promise<Ticket[]> => {
             if (!user) {
@@ -85,8 +108,8 @@ export default function useTickets() {
                 return;
             }
             // invalidate cache queries to refresh unassigned and assigned lists
-            queryClient.invalidateQueries({queryKey: [{"action": "find-unassigned-tickets"}]})
-            queryClient.invalidateQueries({queryKey: [{"agent": user?.id, "action": "find-assigned-tickets"}]})
+            queryClient.invalidateQueries({queryKey: getFindUnssignedTicketKey()})
+            queryClient.invalidateQueries({queryKey: getFindAssignedTicketKey(user?.id ?? "anon")})
             showSuccessToast("Ticket claimed");
         },
         onError: (error) => {
@@ -159,23 +182,8 @@ export default function useTickets() {
     });
 
 
-    // find a ticket by its id
-    const findTicketByIdQuery = (ticketId : string) => {
-        return useQuery({
-            queryKey: getFindTicketByIdKey(ticketId),
-            staleTime: 60 * 5 * 1000, // 5 minutes
-            queryFn: async (): Promise<TicketById | null> => {
-                const res = await findTicketById(ticketId);
-
-                if (res.status === "fail") {
-                    console.error("[ERROR] Cannot find ticket for id: " + ticketId, res.errorMsg);
-                    return null;
-                }
-    
-                return res.data as TicketById;
-            },
-        })
-    }
+    // find a ticket by its id (alias kept for existing call sites)
+    const findTicketByIdQuery = useFindTicketById;
 
     // query to delete a ticket
     const deleteTicketQuery = useMutation({

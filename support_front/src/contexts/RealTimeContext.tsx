@@ -1,4 +1,4 @@
-import type { MessageRow, TicketUnreadData, UserConversation } from "@/apis/types";
+import type { MessageRow, Profile, TicketUnreadData, UserConversation, UserTicket } from "@/apis/types";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { useMatch, useNavigate } from "react-router";
@@ -10,7 +10,7 @@ import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { ticketMessagesKey, type ChatMessage } from "@/hooks/messages/useTicketMessages";
 import { findProfile } from "@/apis/public";
 import { conversationKey } from "@/hooks/messages/useConversations";
-import { fetchUnreadCounts, findConversationById, markTicketRead } from "@/apis/messages";
+import { fetchUnreadCounts, findConversationById, findUserTicket, markTicketRead } from "@/apis/messages";
 
 interface RealtimeContextValue {
     unreadCount: number;
@@ -22,6 +22,58 @@ interface RealtimeContextValue {
 }
 
 const RealtimeContext = createContext<RealtimeContextValue | undefined>(undefined);
+
+
+
+const profileCache: Record<string, Profile> = {};
+const ticketUsersCache: Record<string, UserTicket | undefined> = {};
+
+/**
+ * Load the profile in a local cache to avoid refetching every time
+ * @param senderId 
+ * @returns 
+ */
+const loadProfileById = async (senderId : string) => {
+    if (profileCache[senderId]) {
+        return profileCache[senderId]
+    }
+    const dbProfile = (await findProfile(senderId)).data;
+    // cache profile for next realtime updates
+    if (dbProfile) {
+        profileCache[senderId] = dbProfile;
+    }
+    return dbProfile;
+}
+
+
+/**
+ * Load the ticket participants (client + agent ids) of the given ticket and cache result.
+ * Uses the membership-scoped `findUserTicket` RPC: callers who are not part
+ * of the ticket get `null` (even admins, who can see every ticket via RLS),
+ * so realtime filtering below never fires for unrelated tickets.
+ * @param ticketId
+ * @returns
+ */
+const loadTicketUsersById = async (ticketId : string) => {
+    const cachedEntry = ticketUsersCache[ticketId];
+    if (cachedEntry) {
+        return cachedEntry
+    }
+    const ticketUsers = (await findUserTicket(ticketId)).data as UserTicket | null;
+    // cache ticket users for next realtime updates
+    // (agent assignment is append-only per ticket: unassigned -> assigned,
+    // so refresh the entry once an agent appears)
+    if (ticketUsers) {
+        const prev = ticketUsersCache[ticketId];
+        if (!prev || (!prev.agent_id && ticketUsers.agent_id)) {
+            ticketUsersCache[ticketId] = ticketUsers;
+            return ticketUsers;
+        }
+        return prev;
+    }
+    return null;
+}
+
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
 
@@ -38,10 +90,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
     // dedupe: our own INSERT (and any supabase redelivery) comes back through the same feed
     const seenIdsRef = useRef<Set<string>>(new Set());
-    // refs so the subscription callback always reads fresh values without re-subscribing
+    // refs so the subscription callback always reads fresh values without re-subscribing.
+    const userRef = useRef(user);
     const openTicketIdRef = useRef<string | null>(null);
     const onMessagesPageRef = useRef(false);
     const onConversationPageRef = useRef(false);
+
+    useEffect(() => {
+        userRef.current = user;
+    }, [user]);
 
     useEffect(() => {
         openTicketIdRef.current = openTicketId;
@@ -102,6 +159,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         });
     }, [user]);
 
+
     // Single global channel: postgres_changes on the messages table.
     // Instead of refetching a ticket's message list on every insert (expensive,
     // and unnecessary), we patch the react-query cache for that ticket directly.
@@ -121,25 +179,34 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                     if (seenIdsRef.current.has(row.id)) return;
                     seenIdsRef.current.add(row.id); // ignore duplicated postgres signals
 
-                    const isMine = row.sender_id === user.id;
+                    const currentUserId = userRef.current?.id;
+                    const isMine = row.sender_id === currentUserId;
                     const isViewingTicket =
                         openTicketIdRef.current === row.ticket_id && onMessagesPageRef.current;
-                    
+
                     // patch the message list
+                    const senderProfile = await loadProfileById(row.sender_id);
+                    const ticketUsers = await loadTicketUsersById(row.ticket_id);
+                    const isTicketMember = currentUserId != null && ticketUsers != null &&
+                        (ticketUsers.client_id === currentUserId || ticketUsers.agent_id === currentUserId);
+                    // patch the message list (for all)
                     queryClient.setQueryData<ChatMessage[]>(
                         ticketMessagesKey(row.ticket_id),
                         (old) => {
                             if (!old) return old;
                             if (old.some((m) => m.id === row.id)) return old;
-                            return [...old, row]; // add the new message to the list
+                            return [
+                                ...old, 
+                                {...row, sender: senderProfile ? {username: senderProfile.username, role: senderProfile.role} : null}
+                            ]; // add the new message to the list
                         }
                     );
 
-                    // patch the conversation list
-                    const listKey = conversationKey(user.id);
+                    // patch the conversation list 
+                    const listKey = conversationKey(currentUserId ?? "");
                     const cached = queryClient.getQueryData<InfiniteData<UserConversation[]>>(listKey);
 
-                    if (cached) {
+                    if (cached && isTicketMember) {
                         // extract ticket ids from all the loaded pages (list of pages containing list of ids)
                         const loadedIds = new Set(cached.pages.flat().map((c) => c.id));
 
@@ -150,11 +217,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                                 const flat = old.pages.flat();
                                 const existing = flat.find((c) => c.id === row.ticket_id);
                                 if (!existing) return old; // safe guard, should be included if the set returns true
-
+                                
                                 const updated: UserConversation = {
                                     ...existing,
                                     last_message_content: row.content,
                                     last_message_at: row.created_at,
+                                    last_message_username: senderProfile?.username ?? "anonymous"
                                 };
                                 // remove the conversation from pages
                                 const pages = old.pages.map((page) =>
@@ -181,14 +249,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
                         }
                     }
 
-                    // fire notification if not on the message page and add badge count
-                    if (!isViewingTicket && !isMine) {
+                    // fire notification if not on the message page and add badge count.
+                    if (!isViewingTicket && !isMine && isTicketMember) {
                         setUnreadCount((n) => n + 1);
                         setUnreadByTicket((prev) => ({
                             ...prev,
                             [row.ticket_id]: (prev[row.ticket_id] ?? 0) + 1,
                         }));
-                        const senderProfile = (await findProfile(row.sender_id)).data;
                         showMessageToast(
                             senderProfile,
                             row.content ?? "",

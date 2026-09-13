@@ -1,4 +1,4 @@
-import type { TicketCategory, TicketPriority, TicketStatus } from "@/apis/types";
+import type { TicketCategory, TicketPriority, TicketStatus, UserRole } from "@/apis/types";
 
 /**
  * Helper function to get priority badge color
@@ -52,10 +52,26 @@ export function getStatusBadgeVariant(status: TicketStatus) {
             return "bg-emerald-500 text-white"
         case "in_progress":
             return "bg-yellow-500 text-black"
-        case "resolved":
-            return "bg-blue-600 text-white"
         case "closed":
         default:
             return "bg-gray-400 text-gray-950"
+    }
+}
+
+/**
+ * Helper function to get user role badge color
+ * @param role
+ * @returns
+ */
+export function getRoleBadgeVariant(role: UserRole) {
+
+    switch (role) {
+        case "admin":
+            return "bg-orange text-white"
+        case "agent":
+            return "bg-blue-600 text-white"
+        case "client":
+        default:
+            return "bg-white text-gray-800"
     }
 }
