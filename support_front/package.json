@@ -1,5 +1,7 @@
 {
   "name": "support_front",
+  "packageManager": "pnpm@11.20.0",
+  "engines": { "node": "22.x" },
   "private": true,
   "version": "0.0.0",
   "type": "module",
