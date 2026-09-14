@@ -246,7 +246,7 @@ const SUBJECT_LINES: Record<SubjectType, string> = {
 Deno.serve(async (req: Request) => {
   console.log("[INFO] New email request received")
   const rpcSecret = req.headers.get("X-RPC-Secret");
-  const expectedSecret = Deno.env.get("RPC_RESEND");
+  const expectedSecret = Deno.env.get("RPC_RESEND_KEY");
   
   // origin check
   if (!rpcSecret || !expectedSecret || rpcSecret !== expectedSecret) {

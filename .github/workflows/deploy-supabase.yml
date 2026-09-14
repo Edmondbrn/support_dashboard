@@ -1,0 +1,40 @@
+on:
+  push: { branches: [main] }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./supabase
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # action checkout v6
+
+      - uses: supabase/setup-cli@aa3515eac405eac768fa4a72147c22d88a283c7b
+        name: Install supabase CLI
+        with:
+          version: latest
+
+      - name: Export supabase auth token env variable
+        run: export SUPABASE_ACCESS_TOKEN=${{secrets.SUPABASE_ACCESS_TOKEN}}
+
+      - name: Link to cloud instance
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Push changes
+        run: supabase db push --linked --yes
+
+      - name: Deploy function
+        run: supabase functions deploy resend --linked --yes
+
+      - name: Deploy secrets
+        run: |
+          echo "
+          APP_BASE_URL=support-dashboard-ygd3-fawn.vercel.app
+          RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+          RPC_RESEND_KEY=${{ secrets.RPC_RESEND_KEY }}
+          " > .env
+          supabase secrets set --env-file .env --linked
+
+      - name: Stop supabase
+        run: supabase stop
