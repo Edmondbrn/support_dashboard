@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/context/useAuth";
 import { twJoin } from "tailwind-merge";
 import UserAvatar from "../shared/UserAvatar";
 import { getUserInitials, initialsFromUsername } from "@/utils/userUtils";

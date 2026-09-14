@@ -1,19 +1,10 @@
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { findProfile } from "@/apis/public";
-import type { Profile, UserRole } from "@/apis/types";
-
-
-interface AuthContextValue {
-    user: User | null;
-    profile: Profile | null;
-    role: UserRole | null;
-    isLoading: boolean;
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+import type { Profile } from "@/apis/types";
+import { AuthContext } from "@/contexts/auth-context";
 
 /**
  * Provider which exposes the current authenticated user to the whole app.
@@ -80,12 +71,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             {children}
         </AuthContext.Provider>
     );
-}
-
-export function useAuth(): AuthContextValue {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error("useAuth must be used within an <AuthProvider>");
-    }
-    return context;
 }

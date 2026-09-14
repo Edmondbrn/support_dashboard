@@ -1,7 +1,7 @@
 import { claimTicket, closeTicket, deleteTicket, findAssignedTicketsByAgent, findTicketById, findTicketsByClient, findUnassignedTicket, inProgressTicket } from "@/apis/public";
 import type { Ticket, TicketById } from "@/apis/types";
-import { useConfirm } from "@/contexts/ConfirmationDialogContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/hooks/context/useConfirm";
+import { useAuth } from "@/hooks/context/useAuth";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { conversationKey } from "../messages/useConversations";

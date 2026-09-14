@@ -1,6 +1,6 @@
 import { findUserConversations } from "@/apis/messages";
 import type { UserConversation } from "@/apis/types";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/context/useAuth";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
 export const conversationKey = (userId: string) => ["conversation-user", userId];
