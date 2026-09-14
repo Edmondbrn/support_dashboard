@@ -26,7 +26,7 @@ jobs:
 
 
       - name: Start supabase
-        run: supabase db start
+        run: supabase start
 
 
       - name: Load env variables
