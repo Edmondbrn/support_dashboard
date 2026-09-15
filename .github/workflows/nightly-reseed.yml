@@ -27,7 +27,7 @@ jobs:
       - name: Reset instance
         run: |
           export SUPABASE_ACCESS_TOKEN=${{secrets.SUPABASE_ACCESS_TOKEN}}
-          supabase db reset --linked --include-seed --yes
+          supabase db reset --linked --yes
 
       - name: Stop supabase
         run: supabase stop
