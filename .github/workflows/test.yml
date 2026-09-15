@@ -12,7 +12,6 @@ jobs:
       - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b
         name: Install pnpm
         with:
-          version: 11
           runtime: node@22
           cache: true
           install: true
