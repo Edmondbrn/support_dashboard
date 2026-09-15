@@ -1,23 +1,13 @@
 "use client";
 
 import {
-    createContext,
     useCallback,
-    useContext,
     useRef,
     useState,
     type ReactNode,
 } from "react";
 import { ConfirmationDialog } from "../components/shared/confirmationDialog";
-
-interface ConfirmOptions {
-    title?: string;
-    content: string;
-}
-
-type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
-
-const ConfirmContext = createContext<ConfirmFn | null>(null);
+import { ConfirmContext, type ConfirmOptions, type ConfirmFn } from "@/contexts/confirm-context";
 
 export function ConfirmProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<ConfirmOptions | null>(null);
@@ -51,12 +41,4 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             />
         </ConfirmContext.Provider>
     );
-}
-
-export function useConfirm(): ConfirmFn {
-    const confirm = useContext(ConfirmContext);
-    if (!confirm) {
-        throw new Error("useConfirm must be used within a <ConfirmProvider>");
-    }
-    return confirm;
 }

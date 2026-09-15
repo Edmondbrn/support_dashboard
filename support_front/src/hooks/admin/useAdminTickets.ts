@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { findAllTicketsForAdmin, getAgentTicketStats, reassignTicket, searchAgents } from "@/apis/admin";
 import type { AdminTicket, AgentOption, AgentStats } from "@/apis/types";
-import { useConfirm } from "@/contexts/ConfirmationDialogContext";
+import { useConfirm } from "@/hooks/context/useConfirm";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
 import { getFindAssignedTicketKey } from "../tickets/useTickets";
 import { conversationKey } from "../messages/useConversations";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/context/useAuth";
 
 export const adminAllTicketsKey = ["admin", "all-tickets"];
 export const agentSearchKey = (query: string) => ["admin", "agent-search", query];

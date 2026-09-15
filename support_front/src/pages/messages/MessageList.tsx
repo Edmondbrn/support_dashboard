@@ -3,7 +3,7 @@ import { MessageSquareIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useConversations } from "@/hooks/messages/useConversations";
 import { ConversationCard } from "@/components/messages/ConversationCard";
-import { useRealtime } from "@/contexts/RealTimeContext";
+import { useRealtime } from "@/hooks/context/useRealtime";
 
 export default function MessageList() {
     const { currentUserId, currentUsername, conversations, conversationQuery } = useConversations();
@@ -16,17 +16,17 @@ export default function MessageList() {
         if (!node) return;
         // check if the loading div exists, and if yes trigger the fetch (200PX of security)
         const observer = new IntersectionObserver(
-        ([entry]) => {
-            if (entry.isIntersecting && conversationQuery.hasNextPage && !conversationQuery.isFetchingNextPage) {
-            conversationQuery.fetchNextPage();
-            }
-        },
-        { rootMargin: "200px" }
+            ([entry]) => {
+                if (entry.isIntersecting && conversationQuery.hasNextPage && !conversationQuery.isFetchingNextPage) {
+                conversationQuery.fetchNextPage();
+                }
+            },
+            { rootMargin: "200px" }
         );
 
         observer.observe(node);
         return () => observer.disconnect();
-    }, [conversationQuery.hasNextPage, conversationQuery.isFetchingNextPage, conversationQuery.fetchNextPage]);
+    }, [conversationQuery.hasNextPage, conversationQuery.isFetchingNextPage, conversationQuery.fetchNextPage, conversationQuery]);
 
 
     if (conversationQuery.isLoading) {

@@ -1,6 +1,6 @@
 import { createTicket } from "@/apis/public";
 import type { TicketCategory, TicketPriority } from "@/apis/types";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/context/useAuth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { appRoutes } from "@/config";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";

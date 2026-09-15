@@ -1,6 +1,7 @@
 import type { MessageRow, Profile, TicketUnreadData, UserConversation, UserTicket } from "@/apis/types";
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useAuth } from "./AuthContext";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useAuth } from "@/hooks/context/useAuth";
+import { RealtimeContext } from "@/contexts/realtime-context";
 import { useMatch, useNavigate } from "react-router";
 import { appRoutes } from "@/config";
 import { supabase } from "@/lib/supabase";
@@ -11,19 +12,6 @@ import { ticketMessagesKey, type ChatMessage } from "@/hooks/messages/useTicketM
 import { findProfile } from "@/apis/public";
 import { conversationKey } from "@/hooks/messages/useConversations";
 import { fetchUnreadCounts, findConversationById, findUserTicket, markTicketRead } from "@/apis/messages";
-
-interface RealtimeContextValue {
-    unreadCount: number;
-    unreadByTicket: Record<string, number>;
-    openTicketId: string | null;
-    openTicket: (ticketId: string) => void;
-    closeTicket: (ticketId? : string) => void;
-    resetUnread: () => void;
-}
-
-const RealtimeContext = createContext<RealtimeContextValue | undefined>(undefined);
-
-
 
 const profileCache: Record<string, Profile> = {};
 const ticketUsersCache: Record<string, UserTicket | undefined> = {};
@@ -279,10 +267,4 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
             {children}
         </RealtimeContext.Provider>
     );
-}
-
-export function useRealtime(): RealtimeContextValue {
-    const ctx = useContext(RealtimeContext);
-    if (!ctx) throw new Error("useRealtime must be used within a <RealtimeProvider>");
-    return ctx;
 }
