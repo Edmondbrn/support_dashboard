@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet, RouterProvider } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router';
 
 import './App.css'
 import SignUp from './pages/auth/signup';
@@ -44,6 +44,10 @@ const router = createBrowserRouter([
     path: "/",
     element: <RootLayout />,
     children: [
+      {
+        index: true,
+        element: <Navigate to={appRoutes.HOME} replace />,
+      },
       {
         path: appRoutes.AUTH_SIGNUP,
         element:<SignUp/>
@@ -111,6 +115,10 @@ const router = createBrowserRouter([
             </AdminRoute>
           </ProtectedRoute>
         )
+      },
+      {
+        path: "*",
+        element: <Navigate to={appRoutes.HOME} replace />,
       },
     ]
   }
