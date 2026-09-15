@@ -15,9 +15,6 @@ jobs:
         with:
           version: latest
 
-      - name: Export supabase auth token env variable
-        run: 
-
       - name: Link to cloud instance
         run: |
           export SUPABASE_ACCESS_TOKEN=${{secrets.SUPABASE_ACCESS_TOKEN}}
@@ -31,7 +28,7 @@ jobs:
       - name: Deploy function
         run: |
           export SUPABASE_ACCESS_TOKEN=${{secrets.SUPABASE_ACCESS_TOKEN}}
-          supabase functions deploy resend --linked --yes
+          supabase functions deploy resend --yes
 
       - name: Deploy secrets
         run: |
@@ -41,7 +38,7 @@ jobs:
           RPC_RESEND_KEY=${{ secrets.RPC_RESEND_KEY }}
           " > .env
           export SUPABASE_ACCESS_TOKEN=${{secrets.SUPABASE_ACCESS_TOKEN}}
-          supabase secrets set --env-file .env --linked
+          supabase secrets set --env-file .env
 
       - name: Stop supabase
         run: supabase stop
