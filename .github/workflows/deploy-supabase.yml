@@ -30,7 +30,7 @@ jobs:
       - name: Deploy secrets
         run: |
           echo "
-          APP_BASE_URL=support-dashboard-ygd3-fawn.vercel.app
+          APP_BASE_URL=https://support-dashboard-ygd3-fawn.vercel.app
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
           RPC_RESEND_KEY=${{ secrets.RPC_RESEND_KEY }}
           " > .env
