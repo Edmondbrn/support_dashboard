@@ -146,7 +146,7 @@ export async function sendMessage(
 
     if (error) {
         console.error("[ERROR] Supabase error while sending message", error.message);
-        return { status: "fail", errorMsg: error.message, errorCode: error.code };
+        return { status: "fail", errorMsg: "The message cannot be sent. Maybe the ticket has been closed.", errorCode: error.code };
     }
 
     return { status: "success", data: data };
