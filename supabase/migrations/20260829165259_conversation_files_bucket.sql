@@ -7,7 +7,8 @@ VALUES (
   false,
   5242880, -- 5 MB
   array['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
-);
+)
+ON CONFLICT DO NOTHING;
 
 
 
