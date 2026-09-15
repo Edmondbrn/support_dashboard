@@ -1,6 +1,6 @@
 import { signout } from "@/apis/auth";
 import { appRoutes } from "@/config";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/context/useAuth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/database.types";
@@ -17,7 +17,7 @@ import {
 import { NavLink } from "react-router";
 import { getUserInitials } from "@/utils/userUtils";
 import UserAvatar from "./UserAvatar";
-import { useRealtime } from "@/contexts/RealTimeContext";
+import { useRealtime } from "@/hooks/context/useRealtime";
 
 type UserRole = Database["public"]["Enums"]["roles"];
 

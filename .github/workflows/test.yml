@@ -1,0 +1,55 @@
+on:
+  pull_request: { types: [opened, synchronize, reopened] }
+  push: { branches: [dev, main] }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # action checkout v6
+
+      # v1
+      - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b
+        name: Install pnpm
+        with:
+          version: 11
+          runtime: node@22
+          cache: true
+          install: true
+          working-directory: ./support_front
+
+
+      - uses: supabase/setup-cli@aa3515eac405eac768fa4a72147c22d88a283c7b
+        name: Install supabase CLI
+        with:
+          version: latest
+
+
+      - name: Start supabase
+        run: supabase start
+
+
+      - name: Load env variables
+        run: |
+            raw_env=$(supabase status -o env)
+            env_url=$(echo "$raw_env" | sed 's/API_URL/VITE_SUPABASE_URL/g')
+            env_publishable=$(echo "$env_url" | sed 's/PUBLISHABLE_KEY/VITE_SUPABASE_PUBLISHABLE_KEY/g')
+            env_secret=$(echo "$env_publishable" | sed 's/SECRET_KEY/VITE_SUPABASE_SECRET_KEY/g')
+            echo "$env_secret"
+            echo "$env_secret" > support_front/.env
+
+
+      - name: Run tests
+        run: pnpm --dir support_front test
+
+      - name: Run lint
+        run: pnpm --dir support_front lint
+
+      - name: Run typecheck
+        run: pnpm --dir support_front typecheck
+
+      - name: Run build
+        run: pnpm --dir support_front build
+
+      - name: Stop supabase
+        run: supabase stop

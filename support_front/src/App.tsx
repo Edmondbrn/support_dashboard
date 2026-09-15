@@ -12,7 +12,7 @@ import AdminRoute from './components/auth/AdminRoute';
 import AdminTickets from './pages/admin/AdminTickets';
 import AdminUsers from './pages/admin/AdminUsers';
 import NavBar from './components/shared/navBar';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from './hooks/context/useAuth';
 import { AuthProvider } from './contexts/AuthContext';
 import { appRoutes } from './config';
 import { TooltipProvider } from "@/components/ui/tooltip"

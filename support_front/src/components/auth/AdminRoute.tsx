@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/context/useAuth";
 import { Spinner } from "@/components/ui/spinner";
 import { appRoutes } from "@/config";
 import { Navigate } from "react-router";

@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/context/useAuth";
 import ClientTickets from "@/pages/tickets/ClientTickets";
 import AgentTickets from "@/pages/tickets/AgentTickets";
 import { Spinner } from "@/components/ui/spinner";

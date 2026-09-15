@@ -96,7 +96,7 @@ export default function AgentTickets() {
                 ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                 : new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
-    }, [agentTickets, priorityFilter, categoryFilterAgent, sortOptionAgent, statusFilterAgent]);
+    }, [agentTickets, categoryFilterAgent, sortOptionAgent, statusFilterAgent, priorityFilterAgent]);
 
     return (
         <div className="flex flex-col items-center justify-center gap-5 py-20 text-center">

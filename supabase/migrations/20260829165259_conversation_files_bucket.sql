@@ -11,7 +11,7 @@ VALUES (
 
 
 
-CREATE POLICY "participants can read their discussion files"
+CREATE POLICY "participants can upload their discussion files"
 ON storage.objects
 FOR INSERT
 TO authenticated
@@ -21,7 +21,7 @@ WITH CHECK (
     SELECT 1
     FROM public.tickets t
     WHERE t.id = (storage.foldername(name))[1]::uuid -- check if the file prefix is equals to the ticket ID
-      AND (t.client_id = auth.uid() OR t.agent_id = auth.uid())
+      AND (t.client_id = auth.uid() OR t.agent_id = auth.uid() OR public.is_admin())
   )
 );
 
@@ -42,7 +42,7 @@ USING (
   )
 );
 
-CREATE POLICY "participants can upload to their discussion"
+CREATE POLICY "participants can see to their discussion"
 ON storage.objects
 FOR SELECT
 TO authenticated
@@ -52,6 +52,6 @@ USING (
     SELECT 1
     FROM public.tickets t
     WHERE t.id = (storage.foldername(name))[1]::uuid -- check if the file prefix is equals to the ticket ID
-      AND (t.client_id = auth.uid() OR t.agent_id = auth.uid())
+      AND (t.client_id = auth.uid() OR t.agent_id = auth.uid() OR public.is_admin())
   )
 );

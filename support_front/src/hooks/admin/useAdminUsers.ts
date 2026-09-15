@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteUserAccount, findAllUsersForAdmin, updateUserRole } from "@/apis/admin";
 import type { AdminUser, UserRole } from "@/apis/types";
-import { useConfirm } from "@/contexts/ConfirmationDialogContext";
+import { useConfirm } from "@/hooks/context/useConfirm";
 import { showErrorToast, showSuccessToast } from "@/utils/showToast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/context/useAuth";
 
 export const adminAllUsersKey = ["admin", "all-users"];
 
