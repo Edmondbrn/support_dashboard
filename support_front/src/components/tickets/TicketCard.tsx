@@ -61,16 +61,16 @@ export default function TicketCard({
             <CardContent>
                 <dl className="flex flex-col gap-5 h-full w-full">
 
-                    <div className="flex flex-col items-start text-start gap-2 h-20">
-                        <dt className="font-semibold underline">Description</dt>
-                        <dd className="line-clamp-3">{ticket.description}</dd>
+                    <div className="text-start h-20">
+                        <dt className="font-semibold underline mb-2">Description</dt>
+                        <dd className="line-clamp-3 wrap-break-word" title={ticket.description}>{ticket.description}</dd>
                     </div>
 
-                    {/* show which agent has the charghe of this ticket (for client) */}
+                    {/* show which agent has the charge of this ticket (for client) */}
                     {
                         showAgent && (
-                            <div className="flex flex-col items-start gap-2">
-                                <dt className="font-semibold underline">Agent</dt>
+                            <div className="text-start">
+                                <dt className="font-semibold underline mb-2">Agent</dt>
                                 <dd>{ticket.agent_profile?.username ?? "Not assigned yet"}</dd>
                             </div>
                         )
@@ -79,8 +79,8 @@ export default function TicketCard({
                     {/* show the current status of the ticket (for client) */}
                     {
                         showStatus && (
-                            <div className="flex flex-col items-start gap-2">
-                                <dt className="font-semibold underline">Status</dt>
+                            <div className="text-start">
+                                <dt className="font-semibold underline mb-2">Status</dt>
                                 <dd>
                                     <Badge className={twJoin(["font-semibold capitalize", getStatusBadgeVariant(ticket.status)])}>
                                         {ticket.status.replaceAll("_", " ")}
