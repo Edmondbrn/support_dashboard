@@ -154,7 +154,7 @@ export default function Messages() {
     // State: Loading messages
     if (isMessagesLoading || isTicketLoading || isTicketUserLoading) {
         return (
-            <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col items-center justify-center bg-navy-gradient">
+            <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col items-center justify-center">
                 <Spinner className="size-8 text-white" />
             </div>
         );

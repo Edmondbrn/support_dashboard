@@ -28,8 +28,8 @@ const RootLayout = () => {
     <RealtimeProvider>
       <div className='min-h-screen text-white'>
         {user && <NavBar />}
-        {/* Page body */}
-        <main className='bg-navy-gradient'>
+        {/* Page body  */}
+        <main className='min-h-[calc(100svh-3.5rem)]'>
             <Outlet />
         </main>
       </div>
