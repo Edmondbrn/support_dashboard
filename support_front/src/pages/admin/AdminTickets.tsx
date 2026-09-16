@@ -25,7 +25,8 @@ export default function AdminTickets() {
     } = useAdminTickets();
 
     return (
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-5 px-4 py-10 sm:px-6">
+
+        <div className="w-full max-w-7xl flex flex-col items-center gap-5 px-4 py-20  mx-auto sm:px-6">
             <ShieldCheck className="size-10 text-orange-300" />
             <h1 className="text-lg font-medium text-white">All tickets</h1>
             <p className="text-sm text-slate-400">Review every ticket and reassign agents</p>

@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-rou
 import './App.css'
 import SignUp from './pages/auth/signup';
 import Signin from './pages/auth/signin';
-import Home from './pages/home/home';
+import Home from './pages/home/Home';
 import Tickets from './pages/tickets/tickets';
 import CreateTicket from './pages/tickets/CreateTicket';
 import Messages from './pages/messages/Messages';
