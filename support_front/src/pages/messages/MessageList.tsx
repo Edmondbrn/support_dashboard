@@ -2,10 +2,12 @@ import { useEffect, useRef } from "react";
 import { MessageSquareIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useConversations } from "@/hooks/messages/useConversations";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { ConversationCard } from "@/components/messages/ConversationCard";
 import { useRealtime } from "@/hooks/context/useRealtime";
 
 export default function MessageList() {
+    useDocumentTitle("Messages");
     const { currentUserId, currentUsername, conversations, conversationQuery } = useConversations();
     const { unreadByTicket } = useRealtime();
     const sentinelRef = useRef<HTMLDivElement>(null);

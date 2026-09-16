@@ -1,6 +1,7 @@
 import { Ticket } from "lucide-react";
 
 import useTickets from "@/hooks/tickets/useTickets";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Spinner } from "@/components/ui/spinner";
 import { useNavigate } from "react-router";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +24,7 @@ import {
  * Lists the tickets of the current user (client view).
  */
 export default function ClientTickets() {
+    useDocumentTitle("My tickets");
     const navigate = useNavigate();
     const {
         clientTickets: tickets,

@@ -17,6 +17,7 @@ import {
     type SortOption,
 } from "@/components/tickets/ticketFilters";
 import useTickets from "@/hooks/tickets/useTickets";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import type { Ticket, TicketCategory, TicketPriority, TicketStatus } from "@/apis/types";
 import { useNavigate } from "react-router";
 
@@ -24,6 +25,7 @@ import { useNavigate } from "react-router";
  * Agent view: unassigned ticket queue (claimable + filterable) and assigned tickets.
  */
 export default function AgentTickets() {
+    useDocumentTitle("Ticket queue");
     const navigate = useNavigate();
     const {
         unassignedTickets,

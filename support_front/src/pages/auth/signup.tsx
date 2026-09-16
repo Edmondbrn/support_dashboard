@@ -4,6 +4,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { appRoutes } from "@/config";
 import useSignup from "@/hooks/auth/useSignup";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 
 
@@ -12,6 +13,7 @@ import useSignup from "@/hooks/auth/useSignup";
  * @returns 
  */
 export default function SignUp() {
+    useDocumentTitle("Sign up");
 
     const {
         form,

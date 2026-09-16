@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Spinner } from "@/components/ui/spinner";
 import AdminTicketsTable from "@/components/admin/AdminTicketsTable";
 import useAdminTickets from "@/hooks/admin/useAdminTickets";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { appRoutes } from "@/config";
 
 /**
@@ -11,6 +12,7 @@ import { appRoutes } from "@/config";
  * (guarded by a confirmation dialog in the hook).
  */
 export default function AdminTickets() {
+    useDocumentTitle("All tickets");
     const navigate = useNavigate();
     const {
         tickets,

@@ -2,6 +2,7 @@ import { Inbox, Users } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import AdminUsersTable from "@/components/admin/AdminUsersTable";
 import useAdminUsers from "@/hooks/admin/useAdminUsers";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 /**
  * Admin-only page: plain list of all users in a TanStack-powered datatable.
@@ -9,6 +10,7 @@ import useAdminUsers from "@/hooks/admin/useAdminUsers";
  * table Save button (guarded by a confirmation dialog in the hook).
  */
 export default function AdminUsers() {
+    useDocumentTitle("Users");
     const {
         users,
         isLoading,

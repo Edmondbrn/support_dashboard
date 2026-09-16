@@ -13,6 +13,7 @@ import {
 
 import { appRoutes } from "@/config";
 import { useAuth } from "@/hooks/context/useAuth";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,6 +167,7 @@ const ROLE_HOME_CONTENT: Record<string, RoleHomeContent> = {
  * Role-aware landing page: quick actions plus a short "how it works" guide.
  */
 export default function Home() {
+    useDocumentTitle("Dashboard");
     const { profile } = useAuth();
 
     if (!profile) {

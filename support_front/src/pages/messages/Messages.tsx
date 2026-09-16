@@ -12,12 +12,14 @@ import { getCategoryBadgeVariant, getPriorityBadgeVariant } from "@/utils/ticket
 import type { TicketById } from "@/apis/types";
 import { useNavigate } from "react-router";
 import { appRoutes } from "@/config";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString();
 }
 
 export default function Messages() {
+    useDocumentTitle("Conversation");
 
     const {
         ticketId,
