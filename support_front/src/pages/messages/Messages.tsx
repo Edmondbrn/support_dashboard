@@ -8,16 +8,18 @@ import { Btn } from "@/components/shared/button";
 import useTickets from "@/hooks/tickets/useTickets";
 import { Badge } from "@/components/ui/badge";
 import { twJoin } from "tailwind-merge";
-import { getCategoryBadgeVariant, getPriorityBadgeVariant, getStatusBadgeVariant } from "@/utils/ticketBadges";
+import { getCategoryBadgeVariant, getPriorityBadgeVariant } from "@/utils/ticketBadges";
 import type { TicketById } from "@/apis/types";
 import { useNavigate } from "react-router";
 import { appRoutes } from "@/config";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 function formatDate(iso: string): string {
     return new Date(iso).toLocaleString();
 }
 
 export default function Messages() {
+    useDocumentTitle("Conversation");
 
     const {
         ticketId,
@@ -84,14 +86,9 @@ export default function Messages() {
                 <span className="font-semibold">{`Description: `}</span>
                 <span className="line-clamp-3 pl-3" title={ticket.description}>{ticket.description}</span>
                 <div className="w-full flex justify-between py-2">
-                    <div className="flex gap-2">
-                        <Badge className={twJoin("capitalize", getStatusBadgeVariant(ticket.status))}>
-                            {ticket.status}
-                        </Badge>
-                        <Badge className={twJoin("capitalize", getCategoryBadgeVariant(ticket.category))}>
-                            {ticket.category}
-                        </Badge>
-                    </div>
+                    <Badge className={twJoin("capitalize", getCategoryBadgeVariant(ticket.category))}>
+                        {ticket.category}
+                    </Badge>
                     <Badge className={twJoin("capitalize", getPriorityBadgeVariant(ticket.priority))}>
                         {ticket.priority}
                     </Badge>
@@ -159,7 +156,7 @@ export default function Messages() {
     // State: Loading messages
     if (isMessagesLoading || isTicketLoading || isTicketUserLoading) {
         return (
-            <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col items-center justify-center bg-navy-gradient">
+            <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col items-center justify-center">
                 <Spinner className="size-8 text-white" />
             </div>
         );

@@ -1,9 +1,9 @@
-import { createBrowserRouter, Outlet, RouterProvider } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router';
 
 import './App.css'
 import SignUp from './pages/auth/signup';
 import Signin from './pages/auth/signin';
-import Home from './pages/home/home';
+import Home from './pages/home/Home';
 import Tickets from './pages/tickets/tickets';
 import CreateTicket from './pages/tickets/CreateTicket';
 import Messages from './pages/messages/Messages';
@@ -28,8 +28,8 @@ const RootLayout = () => {
     <RealtimeProvider>
       <div className='min-h-screen text-white'>
         {user && <NavBar />}
-        {/* Page body */}
-        <main className='bg-navy-gradient'>
+        {/* Page body  */}
+        <main className='min-h-[calc(100svh-3.5rem)]'>
             <Outlet />
         </main>
       </div>
@@ -44,6 +44,10 @@ const router = createBrowserRouter([
     path: "/",
     element: <RootLayout />,
     children: [
+      {
+        index: true,
+        element: <Navigate to={appRoutes.HOME} replace />,
+      },
       {
         path: appRoutes.AUTH_SIGNUP,
         element:<SignUp/>
@@ -111,6 +115,10 @@ const router = createBrowserRouter([
             </AdminRoute>
           </ProtectedRoute>
         )
+      },
+      {
+        path: "*",
+        element: <Navigate to={appRoutes.HOME} replace />,
       },
     ]
   }
