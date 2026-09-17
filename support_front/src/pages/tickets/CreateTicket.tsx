@@ -4,6 +4,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import useCreateTicket from "@/hooks/tickets/useCreateTicket";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { CircleQuestionMarkIcon, SearchAlertIcon, ShieldXIcon, TicketPlus } from "lucide-react";
 
 const PRIORITIES = [
@@ -22,6 +23,7 @@ const CATEGORIES = [
  * Form to create a new ticket.
  */
 export default function CreateTicket() {
+    useDocumentTitle("New ticket");
 
     const {
         form,
