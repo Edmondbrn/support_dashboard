@@ -2,10 +2,12 @@ import { useEffect, useRef } from "react";
 import { MessageSquareIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { useConversations } from "@/hooks/messages/useConversations";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { ConversationCard } from "@/components/messages/ConversationCard";
 import { useRealtime } from "@/hooks/context/useRealtime";
 
 export default function MessageList() {
+    useDocumentTitle("Messages");
     const { currentUserId, currentUsername, conversations, conversationQuery } = useConversations();
     const { unreadByTicket } = useRealtime();
     const sentinelRef = useRef<HTMLDivElement>(null);
@@ -41,7 +43,7 @@ export default function MessageList() {
 
     if (conversationQuery.isError) {
         return (
-        <div className="flex h-full flex-col items-center gap-3 py-5">
+        <div className="w-full max-w-7xl flex flex-col items-center gap-5 px-4 py-20  mx-auto sm:px-6">
             <MessageSquareIcon className="mb-4 size-10 text-orange-300" />
             <span>Your conversations cannot be loaded</span>
         </div>
@@ -50,7 +52,7 @@ export default function MessageList() {
 
     if (conversations.length === 0) {
         return (
-        <div className="flex h-full flex-col items-center gap-3 py-5">
+        <div className="w-full max-w-7xl flex flex-col items-center gap-5 px-4 py-20  mx-auto sm:px-6">
             <MessageSquareIcon className="mb-4 size-10 text-orange-300" />
             <span>No conversation yet</span>
         </div>
@@ -58,22 +60,22 @@ export default function MessageList() {
     }
 
     return (
-        <div className="flex flex-col gap-4 px-5 md:px-20 py-5">
-        {conversations.map((conv) => (
-            <ConversationCard
-                key={conv.id}
-                conversation={conv}
-                currentUserId={currentUserId}
-                currentUsername={currentUsername}
-                unreadCount={unreadByTicket[conv.id] ?? 0}
-            />
-        ))}
+        <div className="w-full max-w-7xl flex flex-col items-center gap-5 px-4 py-20 mx-auto sm:px-6">
+            {conversations.map((conv) => (
+                <ConversationCard
+                    key={conv.id}
+                    conversation={conv}
+                    currentUserId={currentUserId}
+                    currentUsername={currentUsername}
+                    unreadCount={unreadByTicket[conv.id] ?? 0}
+                />
+            ))}
 
-        {conversationQuery.hasNextPage && (
-            <div ref={sentinelRef} className="flex justify-center py-4">
-            {conversationQuery.isFetchingNextPage && <Spinner className="size-5 text-orange-300" />}
-            </div>
-        )}
+            {conversationQuery.hasNextPage && (
+                <div ref={sentinelRef} className="flex justify-center py-4">
+                {conversationQuery.isFetchingNextPage && <Spinner className="size-5 text-orange-300" />}
+                </div>
+            )}
         </div>
     );
 }

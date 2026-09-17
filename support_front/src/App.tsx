@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-rou
 import './App.css'
 import SignUp from './pages/auth/signup';
 import Signin from './pages/auth/signin';
-import Home from './pages/home/home';
+import Home from './pages/home/Home';
 import Tickets from './pages/tickets/tickets';
 import CreateTicket from './pages/tickets/CreateTicket';
 import Messages from './pages/messages/Messages';
@@ -28,8 +28,8 @@ const RootLayout = () => {
     <RealtimeProvider>
       <div className='min-h-screen text-white'>
         {user && <NavBar />}
-        {/* Page body */}
-        <main className='bg-navy-gradient'>
+        {/* Page body  */}
+        <main className='min-h-[calc(100svh-3.5rem)]'>
             <Outlet />
         </main>
       </div>
