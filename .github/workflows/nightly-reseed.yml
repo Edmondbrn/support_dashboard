@@ -20,14 +20,24 @@ jobs:
           version: latest
 
       - name: Link to cloud instance
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{secrets.SUPABASE_ACCESS_TOKEN}}
         run: |
-          export SUPABASE_ACCESS_TOKEN=${{secrets.SUPABASE_ACCESS_TOKEN}}
           supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
 
+      - name: Reset storage buckets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{secrets.SUPABASE_ACCESS_TOKEN}}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/reset-buckets.mjs
+
       - name: Reset instance
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{secrets.SUPABASE_ACCESS_TOKEN}}
         run: |
-          export SUPABASE_ACCESS_TOKEN=${{secrets.SUPABASE_ACCESS_TOKEN}}
           supabase db reset --linked --yes
+          supabase config push
 
       - name: Stop supabase
         run: supabase stop
