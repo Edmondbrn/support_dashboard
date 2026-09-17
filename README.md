@@ -46,22 +46,3 @@ The repository contains two main parts:
 `pnpm lint`: oxlint  
 `pnpm test`: vitest integration suite  
 `pnpm typecheck`: tsc --noEmit
-
-
-## Test accounts
-
-**Clients**:
-
-- client1@example.com
-- client2@example.com
-
-**Agents**:
-
-- agent1@example.com
-- agent2@example.com
-
-**Admin**:
-
-- admin@example.com
-
-**Unique password:** P@ssw0rd12345!

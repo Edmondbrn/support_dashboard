@@ -114,6 +114,18 @@ export interface AgentOption {
     role?: UserRole;
 }
 
+/**
+ * Demo login account read from the `demo_accounts` table.
+ * password_plain is clear text on purpose (throwaway demo accounts only).
+ */
+export interface DemoAccount {
+    id: string;
+    label: string;
+    email: string;
+    password_plain: string;
+    role: UserRole;
+}
+
 export interface AgentStats {
     count: number,
     status: TicketStatus
