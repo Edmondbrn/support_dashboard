@@ -34,6 +34,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      demo_accounts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          label: string
+          password_plain: string
+          role: Database["public"]["Enums"]["roles"]
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          label: string
+          password_plain: string
+          role: Database["public"]["Enums"]["roles"]
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          label?: string
+          password_plain?: string
+          role?: Database["public"]["Enums"]["roles"]
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachment_mime_type: Database["public"]["Enums"]["mime_type"] | null
