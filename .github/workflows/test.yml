@@ -34,9 +34,7 @@ jobs:
             env_url=$(echo "$raw_env" | sed 's/API_URL/VITE_SUPABASE_URL/g')
             env_publishable=$(echo "$env_url" | sed 's/PUBLISHABLE_KEY/VITE_SUPABASE_PUBLISHABLE_KEY/g')
             env_secret=$(echo "$env_publishable" | sed 's/SECRET_KEY/VITE_SUPABASE_SECRET_KEY/g')
-            echo "$env_secret"
             echo "$env_secret" > support_front/.env
-
 
       - name: Run tests
         run: pnpm --dir support_front test
