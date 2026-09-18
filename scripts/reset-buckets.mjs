@@ -34,7 +34,7 @@ async function listAllFiles(bucket, path = '') {
  * @param {*} bucket 
  * @returns 
  */
-async function emptyBucket(bucketFiles) {
+async function emptyBucket(bucket, bucketFiles) {
   if (bucketFiles.length === 0) return
   // delete by chunk
   for (let i = 0; i < bucketFiles.length; i += 1000) {
@@ -55,7 +55,7 @@ async function resetAllBuckets() {
   for (const bucket of buckets) {
     const files = await listAllFiles(bucket.name);
     console.log(`→ Emptying "${bucket.name}" (${files.length} files)`);
-    await emptyBucket(files);
+    await emptyBucket(bucket, files);
 
     // Odelet the bucket
     const { error: delErr } = await supabase.storage.deleteBucket(bucket.name)
