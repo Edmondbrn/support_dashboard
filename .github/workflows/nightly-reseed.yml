@@ -24,7 +24,6 @@ jobs:
 
       - name: Reset storage buckets
         env:
-          SUPABASE_ACCESS_TOKEN: ${{secrets.SUPABASE_ACCESS_TOKEN}}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: bun scripts/reset-buckets.mjs

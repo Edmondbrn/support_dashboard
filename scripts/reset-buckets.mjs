@@ -38,8 +38,8 @@ async function emptyBucket(bucket, bucketFiles) {
   if (bucketFiles.length === 0) return
   // delete by chunk
   for (let i = 0; i < bucketFiles.length; i += 1000) {
-    const chunk = bucketFiles.slice(i, i + 1000)
-    const { error } = await supabase.storage.from(bucket).remove(chunk)
+    const chunk = bucketFiles.slice(i, i + 1000);
+    const { error } = await supabase.storage.from(bucket.name).remove(chunk);
     if (error) throw error
   }
 }
